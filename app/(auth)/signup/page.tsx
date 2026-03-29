@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -42,7 +42,7 @@ export default function SignupPage() {
       >
         <div className="card-surface p-8 space-y-6">
           <div className="text-center space-y-2">
-            <span className="text-4xl">🚀</span>
+            <span className="text-4xl">??</span>
             <h1 className="text-2xl font-bold karma-gradient">Join KarmaGig</h1>
             <p className="text-muted-foreground text-sm">Create your student account</p>
           </div>
@@ -67,7 +67,7 @@ export default function SignupPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@student.amity.edu"
+                placeholder="you@s.amity.edu"
                 className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
               />
             </div>

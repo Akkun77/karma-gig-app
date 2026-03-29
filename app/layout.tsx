@@ -10,7 +10,7 @@ const inter = Inter({
   display: "swap",
 });
 
-export const metadata: Metadata = {
+export const metadata: Metadata = { manifest: "/manifest.json",
   title: "KarmaGig — Campus Gig Economy",
   description: "The campus gig economy, powered by Karma. Trade skills and favors with fellow students.",
 };
@@ -42,3 +42,4 @@ export default function RootLayout({
     </html>
   );
 }
+
