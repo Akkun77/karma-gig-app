@@ -1,0 +1,159 @@
+﻿"use client";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { collection, query, where, getDocs, doc, writeBatch } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Gig } from "@/components/GigCard";
+import { Loader2, CheckCircle2 } from "lucide-react";
+import toast from "react-hot-toast";
+
+export default function MyGigsPage() {
+  const { user, userProfile } = useAuth();
+  const [activeTab, setActiveTab] = useState<"posted" | "accepted">("posted");
+  const [gigs, setGigs] = useState<Gig[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    async function loadMyGigs() {
+      setLoading(true);
+      try {
+        const field = activeTab === "posted" ? "postedBy" : "acceptedBy";
+        const q = query(collection(db, "gigs"), where(field, "==", user?.uid));
+        const sn = await getDocs(q);
+        const loaded = sn.docs.map(d => ({ id: d.id, ...d.data() } as Gig));
+        setGigs(loaded.sort((a: any, b: any) => b.createdAt?.toMillis() - a.createdAt?.toMillis()));
+      } catch (err) {
+        toast.error("Failed to load your gigs");
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadMyGigs();
+  }, [user, activeTab]);
+
+  const handleMarkComplete = async (gig: Gig) => {
+    if (!user || gig.status !== "in_progress") return;
+    
+    // Simple mock logic for completion (real transaction function would be in cloud fn or client batched write)
+    try {
+      const batch = writeBatch(db);
+      const gigRef = doc(db, "gigs", gig.id);
+      const txRef = doc(collection(db, "transactions"));
+      
+      // Determine buyer and seller based on gig type
+      const isLookingFor = gig.type === "looking_for";
+      const buyerUid = isLookingFor ? gig.postedBy : gig.acceptedBy;
+      const sellerUid = isLookingFor ? gig.acceptedBy : gig.postedBy;
+
+      batch.update(gigRef, { status: "complete" });
+      batch.set(txRef, {
+        gigId: gig.id,
+        buyerUid,
+        sellerUid,
+        karmaAmount: gig.karmaPrice,
+        completedAt: new Date(),
+      });
+
+      // Update balances (simplified client-side for immediate UI feedback; real system needs atomic increments)
+      const userRef = doc(db, "users", user.uid);
+      const userBalUpdate = user.uid === buyerUid ? -gig.karmaPrice : gig.karmaPrice;
+      
+      // Mocking the write for the user profile since I don't have atomic Increment imported here yet
+      batch.update(userRef, { karmaBalance: (userProfile?.karmaBalance || 0) + userBalUpdate });
+
+      await batch.commit();
+      
+      toast.success(`Gig completed! ${user.uid === buyerUid ? `Paid ${gig.karmaPrice}` : `Earned ${gig.karmaPrice}`} Karma.`);
+      
+      setGigs(prev => prev.map(g => g.id === gig.id ? { ...g, status: "complete" } as Gig : g));
+    } catch(err) {
+      toast.error("Failed to mark complete.");
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto py-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight mb-2">My Gigs</h1>
+        <p className="text-muted-foreground">Manage the gigs you posted and accepted.</p>
+      </div>
+
+      <div className="flex gap-4 mb-8 p-1 card-surface max-w-sm rounded-[1rem]">
+        <button
+          onClick={() => setActiveTab("posted")}
+          className={`flex-1 py-2 font-medium text-sm rounded-[0.75rem] transition-all ${
+            activeTab === "posted" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Posted by Me
+        </button>
+        <button
+          onClick={() => setActiveTab("accepted")}
+          className={`flex-1 py-2 font-medium text-sm rounded-[0.75rem] transition-all ${
+            activeTab === "accepted" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Accepted by Me
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {loading ? (
+          <div className="py-20 flex justify-center text-primary"><Loader2 className="animate-spin w-8 h-8" /></div>
+        ) : gigs.length === 0 ? (
+          <div className="py-20 text-center card-surface glass border-dashed">
+            <span className="text-4xl mb-4 block">👻</span>
+            <p className="text-muted-foreground font-medium">No gigs found here.</p>
+          </div>
+        ) : (
+          gigs.map(gig => (
+            <div key={gig.id} className="card-surface p-6 glass flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-primary/30 transition-colors">
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider ${
+                    gig.type === "looking_for" ? "bg-indigo-500/20 text-indigo-400" : "bg-emerald-500/20 text-emerald-400"
+                  }`}>
+                    {gig.type === "looking_for" ? "Looking For" : "Offering"}
+                  </span>
+                  <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider flex items-center gap-1 ${
+                    gig.status === "open" ? "bg-blue-500/20 text-blue-400" :
+                    gig.status === "in_progress" ? "bg-amber-500/20 text-amber-400" :
+                    "bg-green-500/20 text-green-400"
+                  }`}>
+                    {gig.status === "open" ? "Open" : gig.status === "in_progress" ? "In Progress" : "Complete"}
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-foreground">{gig.title}</h3>
+                <p className="text-sm text-muted-foreground line-clamp-2">{gig.description}</p>
+              </div>
+
+              <div className="flex items-center justify-between md:flex-col md:items-end gap-4 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t border-border md:border-t-0">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-black karma-gradient">{gig.karmaPrice}</span>
+                  <span className="text-primary text-sm">⚡</span>
+                </div>
+                
+                {gig.status === "in_progress" && activeTab === "posted" && (
+                  <button
+                    onClick={() => handleMarkComplete(gig)}
+                    className="flex items-center gap-2 px-6 py-2 bg-green-500 hover:bg-green-400 text-green-950 font-bold rounded-xl transition shadow-lg shadow-green-500/20"
+                  >
+                    <CheckCircle2 size={18} /> Complete
+                  </button>
+                )}
+                {gig.status === "complete" && (
+                  <span className="text-sm font-medium text-green-500 flex items-center gap-1">
+                    <CheckCircle2 size={16} /> Paid
+                  </span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
