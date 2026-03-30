@@ -6,6 +6,9 @@ import { Loader2, Home, PlusCircle, Bookmark, User as UserIcon, MailWarning, Ref
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import { createUserProfile } from "@/lib/auth-helpers";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 function KarmaChip({ balance }: { balance: number }) {
   return (
@@ -17,15 +20,42 @@ function KarmaChip({ balance }: { balance: number }) {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, resendVerificationEmail, reloadUser, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
   }, [user, loading, router]);
 
-  if (loading || !user || !userProfile) {
+  const handleRefreshStatus = async () => {
+    setChecking(true);
+    try {
+      await reloadUser();
+      
+      // If they are physically verified but don't have a profile yet (because we delayed it)
+      if (user?.emailVerified && !userProfile) {
+        // Double check database to prevent duplicates
+        const ref = doc(db, "users", user.uid);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+          toast.loading("Generating your university profile...", { id: "gen" });
+          await createUserProfile(user, user.displayName || "Student");
+          toast.success("Profile created! Welcome to KarmaGig.", { id: "gen" });
+        }
+      } else if (!user?.emailVerified) {
+        toast.error("Email is still not verified.");
+      }
+    } catch (err) {
+      toast.error("Failed to refresh status.");
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  // 1. Initial Auth Loading State
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -33,6 +63,67 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // 2. The Unverified Lock Screen (They cannot bypass this)
+  if (!user.emailVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 shadow-2xl text-center space-y-6"
+        >
+          <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <MailWarning className="w-10 h-10 text-amber-500" />
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-2xl font-black text-foreground">Verify your university email</h1>
+            <p className="text-muted-foreground text-sm font-medium">
+              We sent a verification link to <strong className="text-foreground">{user.email}</strong>. 
+              You must click it before your account and Karma balance are generated.
+            </p>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t border-white/5">
+            <button
+              onClick={handleRefreshStatus}
+              disabled={checking}
+              className="w-full py-3.5 rounded-xl font-bold bg-primary text-primary-foreground flex items-center justify-center gap-2 hover:opacity-90 transition disabled:opacity-50"
+            >
+              <RefreshCw className={`w-5 h-5 ${checking ? "animate-spin" : ""}`} />
+              I've Verified (Refresh)
+            </button>
+            
+            <button
+              onClick={() => resendVerificationEmail()}
+              className="w-full py-3.5 rounded-xl font-bold card-surface hover:bg-white/5 transition flex items-center justify-center gap-2"
+            >
+              Resend Link
+            </button>
+            
+            <button
+              onClick={() => signOut()}
+              className="w-full py-2 text-sm font-bold text-red-400 hover:text-red-300 transition flex items-center justify-center gap-2"
+            >
+              <LogOut className="w-4 h-4" /> Sign Out
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // 3. Verified but profile is still loading over network
+  if (!userProfile) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-muted-foreground font-medium animate-pulse">Loading profile data...</p>
+      </div>
+    );
+  }
+
+  // 4. Fully Verified & Profile Loaded -> Standard App Layout
   const navLinks = [
     { name: "Feed", href: "/feed", icon: Home },
     { name: "Post", href: "/post", icon: PlusCircle },

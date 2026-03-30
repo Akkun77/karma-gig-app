@@ -8,9 +8,11 @@ import {
 } from "react";
 import {
   onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
-  OAuthProvider,
-  signInWithPopup,
+  sendEmailVerification,
+  updateProfile,
   User,
 } from "firebase/auth";
 import {
@@ -36,8 +38,11 @@ interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
-  signInWithMicrosoft: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
+  reloadUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -51,14 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        // subscribe to live profile updates
+        // subscribe to live profile updates (if it exists)
         const ref = doc(db, "users", firebaseUser.uid);
         const profileUnsub = onSnapshot(ref, (snap) => {
           if (snap.exists()) {
             setUserProfile(snap.data() as UserProfile);
           } else {
-            // Profile creation fallback
-            createUserProfile(firebaseUser, firebaseUser.displayName || "Student").catch(console.error);
+            // WE EXPLICITLY DO NOT AUTO-CREATE PROFILES HERE ANYMORE.
+            setUserProfile(null);
           }
         });
         setLoading(false);
@@ -71,36 +76,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsub();
   }, []);
 
-  async function signInWithMicrosoft() {
-    const provider = new OAuthProvider("microsoft.com");
-    provider.setCustomParameters({
-      prompt: "select_account",
-      tenant: "common",
-    });
+  async function signIn(email: string, password: string) {
+    await signInWithEmailAndPassword(auth, email, password);
+  }
 
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const email = result.user.email;
-      
-      if (!email || !validateEmailDomain(email)) {
-        // Log them right back out if not student
-        await firebaseSignOut(auth);
-        throw new Error("Only Amity university student emails (@s.amity.edu) are allowed.");
-      }
+  async function signUp(email: string, password: string, displayName: string) {
+    if (!validateEmailDomain(email)) {
+      throw new Error("Only university email addresses (@s.amity.edu) are allowed.");
+    }
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    
+    // Set the display name directly on the Firebase shell object
+    await updateProfile(cred.user, { displayName });
+    
+    // Immediately send email verification
+    await sendEmailVerification(cred.user);
+    
+    // NO DATABASE PROFILE IS CREATED YET! IT IS DEFERRED TO LAYOUT ONCE VERIFIED.
+  }
 
-      // Check if profile exists, if not, create it
-      const ref = doc(db, "users", result.user.uid);
-      const snap = await getDoc(ref);
-      if (!snap.exists()) {
-        await createUserProfile(result.user, result.user.displayName || "Student");
-      }
-      
-    } catch (error: any) {
-      console.error(error);
-      if (error.message.includes("Amity university")) {
-        throw error;
-      }
-      throw new Error("Failed to sign in with Microsoft.");
+  async function resendVerificationEmail() {
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
+      toast.success("Verification email resent! Check your spam folder.");
+    }
+  }
+
+  async function reloadUser() {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setUser({ ...auth.currentUser } as User);
     }
   }
 
@@ -109,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, signInWithMicrosoft, signOut }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, signIn, signUp, signOut, resendVerificationEmail, reloadUser }}>
       {children}
     </AuthContext.Provider>
   );
