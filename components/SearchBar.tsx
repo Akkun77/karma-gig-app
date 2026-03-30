@@ -58,14 +58,26 @@ export function SearchBar({ activeCategory, onSearch, onCategoryChange }: {
         <div className="flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full card-surface border-border text-sm text-foreground shadow-sm opacity-80">
           <Filter className="h-3 w-3" /> Filters
         </div>
+
+        {/* "All" — default no-filter chip */}
+        <button
+          onClick={() => onCategoryChange(null)}
+          className={`flex shrink-0 items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-200 border shadow-sm ${
+            activeCategory === null
+              ? "text-white bg-primary border-primary scale-105 shadow-primary/40"
+              : "text-muted-foreground bg-white/5 border-white/10 hover:bg-white/10 hover:text-foreground"
+          }`}
+        >
+          🌐 All
+        </button>
+
         {categories.map((cat) => {
           const isActive = activeCategory === cat;
           const mapData = CategoryMap[cat] || CategoryMap["other"];
-          
           return (
             <button
               key={cat}
-              onClick={() => onCategoryChange(isActive ? null : cat)}
+              onClick={() => onCategoryChange(cat)}
               className={`flex shrink-0 items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-200 border shadow-sm ${
                 isActive ? mapData.colorActive + " scale-105" : mapData.colorInactive
               }`}
