@@ -2,7 +2,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Loader2, Home, PlusCircle, Bookmark, User as UserIcon, MailWarning, RefreshCw, LogOut, MessageSquare } from "lucide-react";
+import { Loader2, Home, PlusCircle, Bookmark, User as UserIcon, MailWarning, RefreshCw, LogOut, MessageSquare, Building2, MapPin, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -25,6 +25,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [checking, setChecking] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardName, setOnboardName] = useState("");
+  const [onboardMajor, setOnboardMajor] = useState("");
+  const [onboardLocation, setOnboardLocation] = useState("");
+  const [onboardLoading, setOnboardLoading] = useState(false);
+
+  // Pre-fill name when user object is ready
+  useEffect(() => {
+    if (user?.displayName) setOnboardName(user.displayName);
+  }, [user]);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -34,24 +44,40 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setChecking(true);
     try {
       await reloadUser();
-      
-      // If they are physically verified but don't have a profile yet (because we delayed it)
       if (user?.emailVerified && !userProfile) {
-        // Double check database to prevent duplicates
+        // Email is verified but no profile exists — show onboarding form
         const ref = doc(db, "users", user.uid);
         const snap = await getDoc(ref);
         if (!snap.exists()) {
-          toast.loading("Generating your university profile...", { id: "gen" });
-          await createUserProfile(user, user.displayName || "Student");
-          toast.success("Profile created! Welcome to KarmaGig.", { id: "gen" });
+          setShowOnboarding(true);
         }
       } else if (!user?.emailVerified) {
-        toast.error("Email is still not verified.");
+        toast.error("Email is still not verified. Check your inbox!");
       }
     } catch (err) {
       toast.error("Failed to refresh status.");
     } finally {
       setChecking(false);
+    }
+  };
+
+  const handleCompleteOnboarding = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onboardMajor.trim() || !onboardLocation.trim()) {
+      toast.error("Please fill in all fields to continue.");
+      return;
+    }
+    if (!user) return;
+    setOnboardLoading(true);
+    try {
+      toast.loading("Setting up your campus profile...", { id: "onboard" });
+      await createUserProfile(user, onboardName || user.displayName || "Student", onboardMajor.trim(), onboardLocation.trim());
+      toast.success("Welcome to KarmaGig! 🎉", { id: "onboard" });
+      setShowOnboarding(false);
+    } catch (err) {
+      toast.error("Failed to create profile. Please try again.", { id: "onboard" });
+    } finally {
+      setOnboardLoading(false);
     }
   };
 
@@ -124,6 +150,102 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </motion.div>
       </div>
     );
+  }
+
+  // 2.5: Verified + Onboarding form
+  if (user.emailVerified && (showOnboarding || (!userProfile && !loading))) {
+    // If profile actually loaded since we set showOnboarding, proceed to app
+    if (userProfile && !showOnboarding) {
+      // fall through to app layout below
+    } else {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 shadow-2xl space-y-6"
+          >
+            {/* Header */}
+            <div className="text-center space-y-2">
+              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/20">
+                <Sparkles className="w-10 h-10 text-primary" />
+              </div>
+              <h1 className="text-2xl font-black text-foreground">Almost there! 🎉</h1>
+              <p className="text-muted-foreground text-sm font-medium">
+                Email verified! Just tell us a bit about yourself so other students can find and trust you on campus.
+              </p>
+            </div>
+
+            <form onSubmit={handleCompleteOnboarding} className="space-y-4">
+              {/* Display Name */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <UserIcon className="w-4 h-4 text-primary" /> Your Name
+                </label>
+                <input
+                  type="text"
+                  value={onboardName}
+                  onChange={(e) => setOnboardName(e.target.value)}
+                  placeholder="e.g. Akash Sharma"
+                  required
+                  className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 transition"
+                />
+              </div>
+
+              {/* Department */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-primary" /> Department / Major
+                </label>
+                <input
+                  type="text"
+                  value={onboardMajor}
+                  onChange={(e) => setOnboardMajor(e.target.value)}
+                  placeholder="e.g. Computer Science, Business, Design"
+                  required
+                  className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 transition"
+                />
+              </div>
+
+              {/* Campus Location */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" /> Primary Class Location
+                </label>
+                <input
+                  type="text"
+                  value={onboardLocation}
+                  onChange={(e) => setOnboardLocation(e.target.value)}
+                  placeholder="e.g. Block E, North Campus, Library"
+                  required
+                  className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 transition"
+                />
+                <p className="text-xs text-muted-foreground">Used to help nearby students find you for local gigs.</p>
+              </div>
+
+              <motion.button
+                type="submit"
+                disabled={onboardLoading || !onboardMajor.trim() || !onboardLocation.trim()}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-4 rounded-xl font-black text-lg text-white flex items-center justify-center gap-2 bg-primary hover:opacity-90 transition disabled:opacity-50 shadow-lg shadow-primary/30 mt-2"
+              >
+                {onboardLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                {onboardLoading ? "Creating Profile..." : "Enter the Campus Economy →"}
+              </motion.button>
+
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="w-full py-2 text-sm font-bold text-red-400 hover:text-red-300 transition flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" /> Sign Out
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      );
+    }
   }
 
   // 3. Verified but profile is still loading over network

@@ -32,6 +32,8 @@ export interface UserProfile {
   karmaBalance: number;
   createdAt: unknown;
   avatarUrl?: string | null;
+  major?: string;
+  campusLocation?: string;
 }
 
 interface AuthContextType {

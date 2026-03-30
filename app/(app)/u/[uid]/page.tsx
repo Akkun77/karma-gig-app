@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { Loader2, User as UserIcon, Star, CheckCircle, Clock } from "lucide-react";
+import { Loader2, User as UserIcon, Star, CheckCircle, Clock, MapPin, Building2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface PublicProfile {
@@ -12,6 +12,7 @@ interface PublicProfile {
   university: string;
   karmaBalance: number;
   major?: string;
+  campusLocation?: string;
   rating?: number;
   reviewCount?: number;
 }
@@ -108,11 +109,17 @@ export default function PublicProfilePage({ params }: { params: { uid: string } 
             {profile.university} Student
           </span>
           {profile.major && (
-            <span className="px-3 py-1 bg-white/5 text-muted-foreground font-bold text-xs uppercase tracking-widest rounded-full border border-white/10">
-              {profile.major}
+            <span className="flex items-center gap-1 px-3 py-1 bg-white/5 text-muted-foreground font-bold text-xs uppercase tracking-widest rounded-full border border-white/10">
+              <Building2 className="w-3 h-3" />{profile.major}
             </span>
           )}
         </div>
+        {profile.campusLocation && (
+          <div className="flex items-center gap-1.5 mt-2 z-10 text-blue-400 text-sm font-semibold">
+            <MapPin className="w-4 h-4" />
+            <span>{profile.campusLocation}</span>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4 w-full mt-8 z-10">
           <div className="bg-background/50 rounded-2xl p-4 flex flex-col items-center justify-center border border-white/5 shadow-inner">
@@ -124,11 +131,11 @@ export default function PublicProfilePage({ params }: { params: { uid: string } 
           </div>
           <div className="bg-background/50 rounded-2xl p-4 flex flex-col items-center justify-center border border-white/5 shadow-inner">
             <div className="flex items-center gap-1 mb-1">
-              <Star className="text-blue-500 fill-blue-500 w-4 h-4" />
-              <Star className="text-blue-500 fill-blue-500 w-4 h-4" />
-              <Star className="text-blue-500 fill-blue-500 w-4 h-4" />
-              <Star className="text-blue-500 fill-blue-500 w-4 h-4" />
-              <Star className="text-blue-500 fill-blue-500 w-4 h-4" />
+              <Star className="text-blue-400 fill-blue-400 w-4 h-4" />
+              <Star className="text-blue-400 fill-blue-400 w-4 h-4" />
+              <Star className="text-blue-400 fill-blue-400 w-4 h-4" />
+              <Star className="text-blue-400 fill-blue-400 w-4 h-4" />
+              <Star className="text-blue-400 fill-blue-400 w-4 h-4" />
             </div>
             <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Top Rated</span>
             <span className="text-xs text-muted-foreground mt-1 opacity-70">({profile.reviewCount || 0} reviews)</span>
@@ -162,7 +169,7 @@ export default function PublicProfilePage({ params }: { params: { uid: string } 
                   </span>
                 </div>
                 <div className="flex items-center gap-1 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20 shadow-sm">
-                  <span className="text-xs font-black text-blue-500 uppercase tracking-widest">+ {gig.karmaPrice}</span>
+                  <span className="text-xs font-black text-blue-400 uppercase tracking-widest">+ {gig.karmaPrice}</span>
                 </div>
               </div>
             ))}
