@@ -34,7 +34,7 @@ export default function RootLayout({
                 border: "1px solid rgba(245,158,11,0.3)",
                 borderRadius: "12px",
               },
-              success: { iconTheme: { primary: "#f59e0b", secondary: "#141420" } },
+              success: { iconTheme: { primary: "#2563eb", secondary: "#141420" } },
             }}
           />
         </AuthProvider>

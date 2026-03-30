@@ -13,7 +13,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 
 function KarmaChip({ balance }: { balance: number }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full card-surface border border-amber-500/30">
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full card-surface border border-blue-500/30">
       <span className="text-lg">✨</span>
       <span className="font-bold karma-gradient text-sm">{balance} Karma</span>
     </div>
@@ -73,8 +73,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           animate={{ opacity: 1, scale: 1 }}
           className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 shadow-2xl text-center space-y-6"
         >
-          <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-            <MailWarning className="w-10 h-10 text-amber-500" />
+          <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <MailWarning className="w-10 h-10 text-blue-500" />
           </div>
           
           <div className="space-y-2">
@@ -110,14 +110,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
 
-          <div className="mt-8 p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-left space-y-2 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-10 -mt-10" />
+          <div className="mt-8 p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20 text-left space-y-2 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10" />
             <h3 className="font-bold text-foreground flex items-center gap-2 relative z-10">
               <span className="text-xl">✨</span> What is Karma?
             </h3>
             <p className="text-sm text-foreground/90 font-medium leading-relaxed relative z-10">
               Karma is the official currency of the campus economy. 
-              Instead of cash, you <span className="text-amber-500 font-bold">earn Karma silently</span> when you complete a gig. 
+              Instead of cash, you <span className="text-blue-500 font-bold">earn Karma silently</span> when you complete a gig. 
               You can then burn your Karma to have other students jump in and help you with future tasks!
             </p>
           </div>

@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -37,8 +37,8 @@
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
-  --color-karma: #f59e0b;
-  --color-karma-light: #fbbf24;
+  --color-karma: #2563eb;
+  --color-karma-light: #3b82f6;
 }
 
 /* Dark-first design — KarmaGig palette */
@@ -49,27 +49,27 @@
   --card-foreground: #f0f0f8;
   --popover: #1a1a2a;
   --popover-foreground: #f0f0f8;
-  --primary: #f59e0b;
+  --primary: #2563eb;
   --primary-foreground: #0a0a0f;
   --secondary: #1e1e2e;
   --secondary-foreground: #a0a0b8;
   --muted: #1a1a2a;
   --muted-foreground: #6b6b85;
   --accent: #2a1a00;
-  --accent-foreground: #fbbf24;
+  --accent-foreground: #3b82f6;
   --destructive: #ef4444;
   --border: rgba(255,255,255,0.08);
   --input: rgba(255,255,255,0.06);
-  --ring: #f59e0b;
+  --ring: #2563eb;
   --radius: 0.75rem;
   --sidebar: #0f0f1a;
   --sidebar-foreground: #f0f0f8;
-  --sidebar-primary: #f59e0b;
+  --sidebar-primary: #2563eb;
   --sidebar-primary-foreground: #0a0a0f;
   --sidebar-accent: #1e1e2e;
   --sidebar-accent-foreground: #f0f0f8;
   --sidebar-border: rgba(255,255,255,0.06);
-  --sidebar-ring: #f59e0b;
+  --sidebar-ring: #2563eb;
 }
 
 @layer base {
@@ -86,13 +86,13 @@
 
 @layer utilities {
   .karma-gradient {
-    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    background: linear-gradient(135deg, var(--color-karma), var(--color-karma-light));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .karma-glow {
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3), 0 0 40px rgba(245, 158, 11, 0.1);
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.3), 0 0 40px rgba(59, 130, 246, 0.1);
   }
   .card-surface {
     background: var(--card);

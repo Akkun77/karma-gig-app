@@ -90,7 +90,7 @@ export default function SignupPage() {
               disabled={submitting}
               whileTap={{ scale: 0.97 }}
               className="w-full py-3 rounded-xl font-bold text-primary-foreground karma-glow transition-all disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg,#f59e0b,#fbbf24)" }}
+              style={{ background: "linear-gradient(135deg,#2563eb,#3b82f6)" }}
             >
               {submitting ? "Signing up…" : "Sign Up"}
             </motion.button>

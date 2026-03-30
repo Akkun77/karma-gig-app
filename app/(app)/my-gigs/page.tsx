@@ -173,7 +173,7 @@ export default function MyGigsPage() {
                   </span>
                   <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider flex items-center gap-1 ${
                     gig.status === "open" ? "bg-blue-500/20 text-blue-400" :
-                    gig.status === "in_progress" ? "bg-amber-500/20 text-amber-400" :
+                    gig.status === "in_progress" ? "bg-blue-500/20 text-blue-400" :
                     "bg-green-500/20 text-green-400"
                   }`}>
                     {gig.status === "open" ? "Open" : gig.status === "in_progress" ? "In Progress" : "Complete"}

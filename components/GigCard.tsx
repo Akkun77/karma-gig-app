@@ -137,7 +137,7 @@ export function GigCard({ gig, onAccept, onPass, index, isTop }: GigCardProps) {
                 onClick={navigateToProfile}
                 className="flex items-center gap-3 text-muted-foreground hover:bg-white/5 p-2 -ml-2 rounded-xl transition-colors group cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-amber-500/30 border border-primary/20 flex items-center justify-center text-primary font-bold shadow-md group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-blue-500/30 border border-primary/20 flex items-center justify-center text-primary font-bold shadow-md group-hover:scale-105 transition-transform">
                   {gig.postedByName.charAt(0)}
                 </div>
                 <div className="flex flex-col items-start leading-tight">

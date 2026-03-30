@@ -90,7 +90,7 @@ export default function MessagesInboxPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                       <span className="text-xs font-semibold px-2 py-0.5 bg-amber-500/10 text-amber-500 rounded">
+                       <span className="text-xs font-semibold px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded">
                          Gig: {chat.gigTitle}
                        </span>
                     </div>

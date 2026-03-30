@@ -15,7 +15,7 @@ export default function LandingPage() {
   }, [user, loading, router]);
 
   const steps = [
-    { icon: <Zap size={32} className="text-amber-500" />, title: "Offer Skills", desc: "Help others with coding, design, delivery, or chores." },
+    { icon: <Zap size={32} className="text-blue-500" />, title: "Offer Skills", desc: "Help others with coding, design, delivery, or chores." },
     { icon: <RefreshCw size={32} className="text-indigo-400" />, title: "Earn Karma", desc: "Gain Karma points automatically when the gig is marked complete." },
     { icon: <HandHeart size={32} className="text-emerald-400" />, title: "Get Help", desc: "Spend Karma to have others on campus help you out." },
   ];

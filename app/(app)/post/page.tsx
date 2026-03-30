@@ -144,7 +144,7 @@ export default function PostGigPage() {
               disabled={loading || !title || !description}
               whileTap={{ scale: 0.98 }}
               className="w-full py-4 rounded-xl font-bold text-lg text-primary-foreground karma-glow transition-all disabled:opacity-50 mt-8"
-              style={{ background: "linear-gradient(135deg,#f59e0b,#fbbf24)" }}
+              style={{ background: "linear-gradient(135deg,#2563eb,#3b82f6)" }}
             >
               {loading ? "Publishing..." : `Publish for ${computedKarma} Karma`}
             </motion.button>

@@ -96,9 +96,9 @@ export default function PublicProfilePage({ params }: { params: { uid: string } 
         className="card-surface glass p-8 relative overflow-hidden flex flex-col items-center text-center"
       >
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
         
-        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-indigo-500 to-amber-500 flex items-center justify-center text-white text-5xl font-black shadow-2xl z-10 border-4 border-background mb-4">
+        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center text-white text-5xl font-black shadow-2xl z-10 border-4 border-background mb-4">
           {profile.displayName.charAt(0)}
         </div>
         
@@ -124,11 +124,11 @@ export default function PublicProfilePage({ params }: { params: { uid: string } 
           </div>
           <div className="bg-background/50 rounded-2xl p-4 flex flex-col items-center justify-center border border-white/5 shadow-inner">
             <div className="flex items-center gap-1 mb-1">
-              <Star className="text-amber-500 fill-amber-500 w-4 h-4" />
-              <Star className="text-amber-500 fill-amber-500 w-4 h-4" />
-              <Star className="text-amber-500 fill-amber-500 w-4 h-4" />
-              <Star className="text-amber-500 fill-amber-500 w-4 h-4" />
-              <Star className="text-amber-500 fill-amber-500 w-4 h-4" />
+              <Star className="text-blue-500 fill-blue-500 w-4 h-4" />
+              <Star className="text-blue-500 fill-blue-500 w-4 h-4" />
+              <Star className="text-blue-500 fill-blue-500 w-4 h-4" />
+              <Star className="text-blue-500 fill-blue-500 w-4 h-4" />
+              <Star className="text-blue-500 fill-blue-500 w-4 h-4" />
             </div>
             <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Top Rated</span>
             <span className="text-xs text-muted-foreground mt-1 opacity-70">({profile.reviewCount || 0} reviews)</span>
@@ -161,8 +161,8 @@ export default function PublicProfilePage({ params }: { params: { uid: string } 
                     <Clock className="w-3 h-3" /> {gig.completedAt.toLocaleDateString()}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 bg-amber-500/10 px-3 py-1.5 rounded-full border border-amber-500/20 shadow-sm">
-                  <span className="text-xs font-black text-amber-500 uppercase tracking-widest">+ {gig.karmaPrice}</span>
+                <div className="flex items-center gap-1 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20 shadow-sm">
+                  <span className="text-xs font-black text-blue-500 uppercase tracking-widest">+ {gig.karmaPrice}</span>
                 </div>
               </div>
             ))}

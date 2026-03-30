@@ -99,7 +99,7 @@ export default function ChatRoomPage() {
     <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] max-w-4xl mx-auto -mt-6">
       
       {/* Header */}
-      <div className="card-surface px-4 py-3 flex items-center gap-4 z-10 sticky top-16 md:top-20 border-b border-border shadow-sm">
+      <div className="bg-background/95 backdrop-blur-xl px-4 py-3 flex items-center gap-4 z-50 sticky top-16 md:top-20 border-b border-white/5 shadow-md">
         <button onClick={() => router.back()} className="p-2 hover:bg-white/10 rounded-full transition-colors">
           <ArrowLeft className="w-5 h-5 text-muted-foreground hover:text-foreground" />
         </button>
