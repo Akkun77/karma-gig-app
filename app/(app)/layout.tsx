@@ -108,6 +108,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <LogOut className="w-4 h-4" /> Sign Out
             </button>
           </div>
+
+          <div className="mt-8 p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-left space-y-2 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-10 -mt-10" />
+            <h3 className="font-bold text-foreground flex items-center gap-2 relative z-10">
+              <span className="text-xl">✨</span> What is Karma?
+            </h3>
+            <p className="text-sm text-foreground/90 font-medium leading-relaxed relative z-10">
+              Karma is the official currency of the campus economy. 
+              Instead of cash, you <span className="text-amber-500 font-bold">earn Karma silently</span> when you complete a gig. 
+              You can then burn your Karma to have other students jump in and help you with future tasks!
+            </p>
+          </div>
         </motion.div>
       </div>
     );

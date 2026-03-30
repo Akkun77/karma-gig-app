@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -71,7 +71,7 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-10">
             <Link href="/signup" className="flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-lg bg-primary text-primary-foreground karma-glow hover:scale-105 active:scale-95 transition-all w-full sm:w-auto">
-              Start with 50 Karma <ArrowRight size={20} />
+              Start <ArrowRight size={20} />
             </Link>
           </div>
         </motion.div>
