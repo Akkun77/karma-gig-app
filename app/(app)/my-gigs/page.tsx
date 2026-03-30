@@ -2,10 +2,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { collection, query, where, getDocs, doc, writeBatch, deleteDoc, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, writeBatch, deleteDoc, addDoc, serverTimestamp, getDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Gig } from "@/components/GigCard";
-import { Loader2, CheckCircle2, Trash2, MessageSquare } from "lucide-react";
+import { Loader2, CheckCircle2, Trash2, MessageSquare, Clock, PartyPopper, Star } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function MyGigsPage() {
@@ -38,32 +38,53 @@ export default function MyGigsPage() {
 
   const handleMarkComplete = async (gig: Gig) => {
     if (!user || gig.status !== "in_progress") return;
+    const confirmed = confirm(`Mark "${gig.title}" as complete and transfer ${gig.karmaPrice} Karma?`);
+    if (!confirmed) return;
     try {
       const batch = writeBatch(db);
       const gigRef = doc(db, "gigs", gig.id);
-      const txRef = doc(collection(db, "transactions"));
-      
-      const isLookingFor = gig.type === "looking_for";
-      const buyerUid = isLookingFor ? gig.postedBy : gig.acceptedBy;
-      const sellerUid = isLookingFor ? gig.acceptedBy : gig.postedBy;
 
+      // Determine who pays & who earns
+      const isLookingFor = gig.type === "looking_for";
+      const buyerUid = isLookingFor ? gig.postedBy : gig.acceptedBy!;
+      const sellerUid = isLookingFor ? gig.acceptedBy! : gig.postedBy;
+
+      // Mark gig complete
       batch.update(gigRef, { status: "complete" });
+
+      // Record transaction
+      const txRef = doc(collection(db, "transactions"));
       batch.set(txRef, {
         gigId: gig.id,
+        gigTitle: gig.title,
         buyerUid,
         sellerUid,
         karmaAmount: gig.karmaPrice,
-        completedAt: new Date(),
+        completedAt: serverTimestamp(),
       });
 
-      const userRef = doc(db, "users", user.uid);
-      const userBalUpdate = user.uid === buyerUid ? -gig.karmaPrice : gig.karmaPrice;
-      
-      batch.update(userRef, { karmaBalance: (userProfile?.karmaBalance || 0) + userBalUpdate });
+      // Atomically update BOTH balances using increment()
+      batch.update(doc(db, "users", buyerUid), { karmaBalance: increment(-gig.karmaPrice) });
+      batch.update(doc(db, "users", sellerUid), { karmaBalance: increment(gig.karmaPrice) });
+
+      // Notify the acceptor (seller) that Karma landed
+      const notifRef = doc(collection(db, "notifications"));
+      batch.set(notifRef, {
+        userId: sellerUid,
+        sourceId: user.uid,
+        sourceName: userProfile?.displayName || "Someone",
+        type: "gig_accepted",
+        text: `confirmed your gig "${gig.title}" complete! +${gig.karmaPrice} Karma earned! 🎉`,
+        link: "/my-gigs",
+        read: false,
+        createdAt: serverTimestamp(),
+      });
+
       await batch.commit();
-      toast.success(`Gig completed! ${user.uid === buyerUid ? `Paid ${gig.karmaPrice}` : `Earned ${gig.karmaPrice}`} Karma.`);
+      toast.success(`🎉 Gig complete! ${gig.karmaPrice} Karma transferred.`);
       setGigs(prev => prev.map(g => g.id === gig.id ? { ...g, status: "complete" } as Gig : g));
-    } catch(err) {
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to mark complete.");
     }
   };
@@ -189,37 +210,51 @@ export default function MyGigsPage() {
                   <span className="text-primary text-sm">⚡</span>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  {gig.status === "open" && activeTab === "posted" && (
-                    <button
-                      onClick={() => handleDeleteGig(gig)}
-                      className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl transition shadow-lg shadow-red-500/10"
-                    >
-                      <Trash2 size={18} /> Delete
-                    </button>
-                  )}
+                <div className="flex flex-wrap items-center gap-2 mt-2 md:mt-0">
+                  {/* Chat button — both parties can chat while in progress */}
                   {gig.status === "in_progress" && (
                     <button
                       onClick={() => handleMessageUser(gig)}
-                      className="flex items-center gap-2 px-6 py-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-500/20"
+                      className="flex items-center gap-2 px-5 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-bold rounded-xl border border-indigo-500/20 transition"
                     >
-                      <MessageSquare size={18} /> Chat
+                      <MessageSquare size={16} /> Chat
                     </button>
                   )}
-                  {gig.status === "in_progress" && activeTab === "posted" && (
+
+                  {/* POSTER: "Gig is Completed" confirmation button */}
+                  {gig.status === "in_progress" && activeTab === "posted" && gig.postedBy === user?.uid && (
                     <button
                       onClick={() => handleMarkComplete(gig)}
-                      className="flex items-center gap-2 px-6 py-2 bg-green-500 hover:bg-green-400 text-green-950 font-bold rounded-xl transition shadow-lg shadow-green-500/20"
+                      className="flex items-center gap-2 px-6 py-2.5 bg-green-500 hover:bg-green-400 text-black font-black rounded-xl transition shadow-lg shadow-green-500/30 animate-pulse"
                     >
-                      <CheckCircle2 size={18} /> Complete
+                      <CheckCircle2 size={18} /> Gig is Completed!
                     </button>
                   )}
+
+                  {/* ACCEPTOR: Waiting badge shown in their "Accepted by Me" tab */}
+                  {gig.status === "in_progress" && activeTab === "accepted" && gig.acceptedBy === user?.uid && (
+                    <span className="flex items-center gap-2 px-5 py-2 text-blue-400 bg-blue-500/10 border border-blue-500/20 font-bold rounded-xl text-sm">
+                      <Clock size={15} /> Awaiting Poster Confirmation
+                    </span>
+                  )}
+
+                  {/* Delete — only poster can delete open gigs */}
+                  {gig.status === "open" && activeTab === "posted" && (
+                    <button
+                      onClick={() => handleDeleteGig(gig)}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl transition"
+                    >
+                      <Trash2 size={16} /> Delete
+                    </button>
+                  )}
+
+                  {/* Complete badge */}
+                  {gig.status === "complete" && (
+                    <span className="flex items-center gap-2 px-5 py-2 text-green-400 bg-green-500/10 border border-green-500/20 font-bold rounded-xl text-sm">
+                      <PartyPopper size={15} /> {activeTab === "accepted" ? `+${gig.karmaPrice} Karma Earned!` : `Completed`}
+                    </span>
+                  )}
                 </div>
-                {gig.status === "complete" && (
-                  <span className="text-sm font-medium text-green-500 flex items-center gap-1">
-                    <CheckCircle2 size={16} /> Paid
-                  </span>
-                )}
               </div>
             </div>
           ))
