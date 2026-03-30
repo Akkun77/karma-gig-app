@@ -96,7 +96,7 @@ export default function ChatRoomPage() {
   const gigTitle = activeChat?.gigTitle || "Unknown Gig";
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] max-w-4xl mx-auto -mt-6">
+    <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] max-w-4xl mx-auto -mt-6 overflow-x-hidden w-full">
       
       {/* Header */}
       <div className="bg-background/95 backdrop-blur-xl px-4 py-3 flex items-center gap-4 z-50 sticky top-16 md:top-20 border-b border-white/5 shadow-md">
@@ -111,7 +111,7 @@ export default function ChatRoomPage() {
             <div className="flex items-center gap-2">
               <h2 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">{otherName}</h2>
             </div>
-            <p className="text-xs text-amber-500 font-medium tracking-wide flex items-center">
+            <p className="text-xs text-blue-400 font-medium tracking-wide flex items-center">
               Re: {gigTitle}
             </p>
           </div>
@@ -119,7 +119,7 @@ export default function ChatRoomPage() {
       </div>
 
       {/* Messages Feed */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32 overscroll-contain">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-4 space-y-3 pb-36 overscroll-contain w-full">
         {loading ? (
           <div className="h-full flex items-center justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -141,12 +141,12 @@ export default function ChatRoomPage() {
                   key={m.id}
                   initial={{ opacity: 0, y: 10, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className={`flex ${isMe ? "justify-end" : "justify-start"} w-full`}
+                  className={`flex ${isMe ? "justify-end" : "justify-start"} w-full min-w-0`}
                 >
                   <div
-                    className={`max-w-[75%] px-4 py-2.5 shadow-sm text-[15px] leading-relaxed break-words ${
+                    className={`max-w-[72%] min-w-0 px-4 py-2.5 shadow-sm text-[15px] leading-relaxed break-words overflow-hidden ${
                       isMe
-                        ? "bg-primary text-primary-foreground"
+                        ? "bg-primary text-white"
                         : "card-surface glass text-foreground"
                     } ${
                       isMe

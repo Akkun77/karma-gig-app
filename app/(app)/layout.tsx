@@ -7,7 +7,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { createUserProfile } from "@/lib/auth-helpers";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { NotificationBell } from "@/components/NotificationBell";
 
@@ -64,18 +64,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const handleCompleteOnboarding = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!onboardMajor.trim() || !onboardLocation.trim()) {
-      toast.error("Please fill in all fields to continue.");
+      toast.error("Please fill in both your department and class location.");
       return;
     }
     if (!user) return;
     setOnboardLoading(true);
     try {
-      toast.loading("Setting up your campus profile...", { id: "onboard" });
-      await createUserProfile(user, onboardName || user.displayName || "Student", onboardMajor.trim(), onboardLocation.trim());
-      toast.success("Welcome to KarmaGig! 🎉", { id: "onboard" });
+      toast.loading("Saving your campus profile...", { id: "onboard" });
+      if (userProfile) {
+        // Existing profile missing fields — patch only
+        await updateDoc(doc(db, "users", user.uid), {
+          major: onboardMajor.trim(),
+          campusLocation: onboardLocation.trim(),
+        });
+        toast.success("Profile updated! Welcome back. 🎉", { id: "onboard" });
+      } else {
+        // Brand new profile
+        await createUserProfile(user, onboardName || user.displayName || "Student", onboardMajor.trim(), onboardLocation.trim());
+        toast.success("Welcome to KarmaGig! 🎉", { id: "onboard" });
+      }
       setShowOnboarding(false);
     } catch (err) {
-      toast.error("Failed to create profile. Please try again.", { id: "onboard" });
+      toast.error("Failed to save profile. Please try again.", { id: "onboard" });
     } finally {
       setOnboardLoading(false);
     }
@@ -254,6 +264,72 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
         <p className="text-muted-foreground font-medium animate-pulse">Loading profile data...</p>
+      </div>
+    );
+  }
+
+  // 3.5: Profile exists but is missing required campus fields (e.g. old accounts)
+  const profileIncomplete = !userProfile.major?.trim() || !userProfile.campusLocation?.trim();
+  if (profileIncomplete) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 shadow-2xl space-y-6"
+        >
+          <div className="text-center space-y-2">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/20">
+              <MapPin className="w-8 h-8 text-primary" />
+            </div>
+            <h1 className="text-2xl font-black text-foreground">Complete your profile</h1>
+            <p className="text-muted-foreground text-sm font-medium">
+              We need your department and campus location so students can connect with you for gigs nearby!
+            </p>
+          </div>
+
+          <form onSubmit={handleCompleteOnboarding} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-primary" /> Department / Major
+              </label>
+              <input
+                type="text"
+                value={onboardMajor}
+                onChange={(e) => setOnboardMajor(e.target.value)}
+                placeholder="e.g. Computer Science, Business, Design"
+                required
+                className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 transition"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-primary" /> Primary Class Location
+              </label>
+              <input
+                type="text"
+                value={onboardLocation}
+                onChange={(e) => setOnboardLocation(e.target.value)}
+                placeholder="e.g. Block E, North Campus, Library"
+                required
+                className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 transition"
+              />
+              <p className="text-xs text-muted-foreground">Used to help nearby students find you for local gigs.</p>
+            </div>
+
+            <motion.button
+              type="submit"
+              disabled={onboardLoading || !onboardMajor.trim() || !onboardLocation.trim()}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-4 rounded-xl font-black text-lg text-white flex items-center justify-center gap-2 bg-primary hover:opacity-90 transition disabled:opacity-50 shadow-lg shadow-primary/30 mt-2"
+            >
+              {onboardLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+              {onboardLoading ? "Saving..." : "Save & Enter KarmaGig →"}
+            </motion.button>
+          </form>
+        </motion.div>
       </div>
     );
   }
