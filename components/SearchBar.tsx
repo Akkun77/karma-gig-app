@@ -1,7 +1,16 @@
-﻿"use client";
-import { Search, Filter, X } from "lucide-react";
+"use client";
+import { Search, Filter, X, Target, Truck, Palette, Code, Sparkles, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+
+export const CategoryMap: Record<string, { label: string; icon: any; colorActive: string; colorInactive: string }> = {
+  tutoring: { label: "📚 Tutoring", icon: Target, colorActive: "text-blue-200 bg-blue-600 border-blue-500 shadow-blue-500/50", colorInactive: "text-blue-400 bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20" },
+  delivery: { label: "🍕 Delivery", icon: Truck, colorActive: "text-orange-100 bg-orange-500 border-orange-400 shadow-orange-500/50", colorInactive: "text-orange-400 bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20" },
+  design: { label: "🎨 Design", icon: Palette, colorActive: "text-pink-100 bg-pink-500 border-pink-400 shadow-pink-500/50", colorInactive: "text-pink-400 bg-pink-500/10 border-pink-500/20 hover:bg-pink-500/20" },
+  coding: { label: "💻 Coding", icon: Code, colorActive: "text-cyan-100 bg-cyan-600 border-cyan-500 shadow-cyan-500/50", colorInactive: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20 hover:bg-cyan-500/20" },
+  cleaning: { label: "🧹 Chores", icon: Sparkles, colorActive: "text-yellow-100 bg-yellow-600 border-yellow-500 shadow-yellow-500/50", colorInactive: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20 hover:bg-yellow-500/20" },
+  other: { label: "✨ Other", icon: AlertCircle, colorActive: "text-gray-100 bg-gray-600 border-gray-500 shadow-gray-500/50", colorInactive: "text-gray-400 bg-gray-500/10 border-gray-500/20 hover:bg-gray-500/20" },
+};
 
 export function SearchBar({ activeCategory, onSearch, onCategoryChange }: {
   activeCategory: string | null;
@@ -22,7 +31,7 @@ export function SearchBar({ activeCategory, onSearch, onCategoryChange }: {
   };
 
   return (
-    <div className="w-full space-y-3 mb-6">
+    <div className="w-full space-y-4 mb-6">
       <div className="relative group">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
           <Search className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -32,7 +41,7 @@ export function SearchBar({ activeCategory, onSearch, onCategoryChange }: {
           value={query}
           onChange={handleSearch}
           placeholder="Search by title, category, or user..."
-          className="w-full pl-12 pr-10 py-3.5 card-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground transition-shadow glass"
+          className="w-full pl-12 pr-10 py-3.5 card-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground transition-shadow glass rounded-2xl border border-white/5 shadow-black/20"
         />
         {query && (
           <button
@@ -46,22 +55,22 @@ export function SearchBar({ activeCategory, onSearch, onCategoryChange }: {
 
       {/* Category Chips */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full card-surface border-border text-sm text-foreground shadow-sm">
+        <div className="flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full card-surface border-border text-sm text-foreground shadow-sm opacity-80">
           <Filter className="h-3 w-3" /> Filters
         </div>
         {categories.map((cat) => {
           const isActive = activeCategory === cat;
+          const mapData = CategoryMap[cat] || CategoryMap["other"];
+          
           return (
             <button
               key={cat}
               onClick={() => onCategoryChange(isActive ? null : cat)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 border ${
-                isActive
-                  ? "bg-primary text-primary-foreground border-primary karma-glow tracking-wide"
-                  : "glass text-muted-foreground hover:text-foreground border-border hover:bg-white/5"
+              className={`flex shrink-0 items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-200 border shadow-sm ${
+                isActive ? mapData.colorActive + " scale-105" : mapData.colorInactive
               }`}
             >
-              {cat.charAt(0).toUpperCase() + cat.slice(1)}
+              {mapData.label}
             </button>
           );
         })}
