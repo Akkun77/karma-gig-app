@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -101,12 +101,13 @@ export default function PostGigPage() {
                   className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground focus:ring-2 focus:ring-primary/50 transition"
                   required
                 >
-                  <option value="tutoring">Tutoring & Study</option>
-                  <option value="delivery">Campus Delivery</option>
-                  <option value="design">Design & Media</option>
-                  <option value="coding">Coding & Tech</option>
-                  <option value="cleaning">Cleaning & Chores</option>
-                  <option value="other">Other</option>
+                  <option value="tutoring" className="bg-[#1a1a1a] text-white">Tutoring & Study</option>
+                  <option value="delivery" className="bg-[#1a1a1a] text-white">Campus Delivery</option>
+                  <option value="design" className="bg-[#1a1a1a] text-white">Design & Media</option>
+                  <option value="coding" className="bg-[#1a1a1a] text-white">Coding & Tech</option>
+                  <option value="cleaning" className="bg-[#1a1a1a] text-white">Cleaning & Chores</option>
+                  <option value="other" className="bg-[#1a1a1a] text-white">Other</option>
+
                 </select>
               </div>
 
