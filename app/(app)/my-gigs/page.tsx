@@ -1,14 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { collection, query, where, getDocs, doc, writeBatch, deleteDoc } from "firebase/firestore";
+import { useRouter } from "next/navigation";
+import { collection, query, where, getDocs, doc, writeBatch, deleteDoc, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Gig } from "@/components/GigCard";
-import { Loader2, CheckCircle2, Trash2 } from "lucide-react";
+import { Loader2, CheckCircle2, Trash2, MessageSquare } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function MyGigsPage() {
   const { user, userProfile } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"posted" | "accepted">("posted");
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,14 +38,11 @@ export default function MyGigsPage() {
 
   const handleMarkComplete = async (gig: Gig) => {
     if (!user || gig.status !== "in_progress") return;
-    
-    // Simple mock logic for completion (real transaction function would be in cloud fn or client batched write)
     try {
       const batch = writeBatch(db);
       const gigRef = doc(db, "gigs", gig.id);
       const txRef = doc(collection(db, "transactions"));
       
-      // Determine buyer and seller based on gig type
       const isLookingFor = gig.type === "looking_for";
       const buyerUid = isLookingFor ? gig.postedBy : gig.acceptedBy;
       const sellerUid = isLookingFor ? gig.acceptedBy : gig.postedBy;
@@ -57,17 +56,12 @@ export default function MyGigsPage() {
         completedAt: new Date(),
       });
 
-      // Update balances (simplified client-side for immediate UI feedback; real system needs atomic increments)
       const userRef = doc(db, "users", user.uid);
       const userBalUpdate = user.uid === buyerUid ? -gig.karmaPrice : gig.karmaPrice;
       
-      // Mocking the write for the user profile since I don't have atomic Increment imported here yet
       batch.update(userRef, { karmaBalance: (userProfile?.karmaBalance || 0) + userBalUpdate });
-
       await batch.commit();
-      
       toast.success(`Gig completed! ${user.uid === buyerUid ? `Paid ${gig.karmaPrice}` : `Earned ${gig.karmaPrice}`} Karma.`);
-      
       setGigs(prev => prev.map(g => g.id === gig.id ? { ...g, status: "complete" } as Gig : g));
     } catch(err) {
       toast.error("Failed to mark complete.");
@@ -78,7 +72,6 @@ export default function MyGigsPage() {
     if (!user || gig.postedBy !== user.uid) return;
     const confirmed = confirm("Are you sure you want to delete this gig?");
     if (!confirmed) return;
-    
     try {
       await deleteDoc(doc(db, "gigs", gig.id));
       toast.success("Gig deleted successfully.");
@@ -88,8 +81,54 @@ export default function MyGigsPage() {
     }
   };
 
+  const handleMessageUser = async (gig: Gig) => {
+    if (!user || !userProfile) return;
+    
+    const otherUid = gig.postedBy === user.uid ? gig.acceptedBy : gig.postedBy;
+    if (!otherUid) return toast.error("No one has accepted this gig yet.");
+
+    try {
+      const q = query(collection(db, "chats"), where("gigId", "==", gig.id));
+      const snaps = await getDocs(q);
+      
+      let chatId = "";
+      
+      if (!snaps.empty) {
+        chatId = snaps.docs[0].id;
+      } else {
+        const otherNameFetch = async () => {
+          if (gig.postedBy !== user.uid) return gig.postedByName;
+          const snap = await getDoc(doc(db, "users", otherUid));
+          return snap.exists() ? snap.data().displayName : "Student";
+        };
+        const otherName = await otherNameFetch();
+
+        const participants = [user.uid, otherUid];
+        const participantNames = {
+          [user.uid]: userProfile.displayName,
+          [otherUid]: otherName
+        };
+
+        const docRef = await addDoc(collection(db, "chats"), {
+          participants,
+          participantNames,
+          gigId: gig.id,
+          gigTitle: gig.title,
+          lastMessage: "Chat created",
+          updatedAt: serverTimestamp()
+        });
+        chatId = docRef.id;
+      }
+
+      router.push(`/messages/${chatId}`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not open chat");
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto py-6">
+    <div className="max-w-4xl mx-auto py-6 pb-24">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight mb-2">My Gigs</h1>
         <p className="text-muted-foreground">Manage the gigs you posted and accepted.</p>
@@ -157,6 +196,14 @@ export default function MyGigsPage() {
                       className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl transition shadow-lg shadow-red-500/10"
                     >
                       <Trash2 size={18} /> Delete
+                    </button>
+                  )}
+                  {gig.status === "in_progress" && (
+                    <button
+                      onClick={() => handleMessageUser(gig)}
+                      className="flex items-center gap-2 px-6 py-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-500/20"
+                    >
+                      <MessageSquare size={18} /> Chat
                     </button>
                   )}
                   {gig.status === "in_progress" && activeTab === "posted" && (
