@@ -1,10 +1,10 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { collection, query, where, getDocs, doc, writeBatch } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, writeBatch, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Gig } from "@/components/GigCard";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function MyGigsPage() {
@@ -74,6 +74,20 @@ export default function MyGigsPage() {
     }
   };
 
+  const handleDeleteGig = async (gig: Gig) => {
+    if (!user || gig.postedBy !== user.uid) return;
+    const confirmed = confirm("Are you sure you want to delete this gig?");
+    if (!confirmed) return;
+    
+    try {
+      await deleteDoc(doc(db, "gigs", gig.id));
+      toast.success("Gig deleted successfully.");
+      setGigs(prev => prev.filter(g => g.id !== gig.id));
+    } catch(err) {
+      toast.error("Failed to delete gig.");
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-6">
       <div className="mb-8">
@@ -136,14 +150,24 @@ export default function MyGigsPage() {
                   <span className="text-primary text-sm">⚡</span>
                 </div>
                 
-                {gig.status === "in_progress" && activeTab === "posted" && (
-                  <button
-                    onClick={() => handleMarkComplete(gig)}
-                    className="flex items-center gap-2 px-6 py-2 bg-green-500 hover:bg-green-400 text-green-950 font-bold rounded-xl transition shadow-lg shadow-green-500/20"
-                  >
-                    <CheckCircle2 size={18} /> Complete
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {gig.status === "open" && activeTab === "posted" && (
+                    <button
+                      onClick={() => handleDeleteGig(gig)}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl transition shadow-lg shadow-red-500/10"
+                    >
+                      <Trash2 size={18} /> Delete
+                    </button>
+                  )}
+                  {gig.status === "in_progress" && activeTab === "posted" && (
+                    <button
+                      onClick={() => handleMarkComplete(gig)}
+                      className="flex items-center gap-2 px-6 py-2 bg-green-500 hover:bg-green-400 text-green-950 font-bold rounded-xl transition shadow-lg shadow-green-500/20"
+                    >
+                      <CheckCircle2 size={18} /> Complete
+                    </button>
+                  )}
+                </div>
                 {gig.status === "complete" && (
                   <span className="text-sm font-medium text-green-500 flex items-center gap-1">
                     <CheckCircle2 size={16} /> Paid

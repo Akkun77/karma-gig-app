@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import {
   createContext,
   useContext,
@@ -11,6 +11,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
+  sendEmailVerification,
   User,
 } from "firebase/auth";
 import {
@@ -38,6 +39,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
+  reloadUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -85,6 +88,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!snap.exists()) {
       await createUserProfile(cred.user, displayName);
     }
+    await sendEmailVerification(cred.user);
+  }
+
+  async function resendVerificationEmail() {
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
+    }
+  }
+
+  async function reloadUser() {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setUser({ ...auth.currentUser } as User);
+    }
   }
 
   async function signOut() {
@@ -92,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, signIn, signUp, signOut, resendVerificationEmail, reloadUser }}>
       {children}
     </AuthContext.Provider>
   );

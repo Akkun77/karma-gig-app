@@ -1,10 +1,11 @@
-﻿"use client";
+"use client";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Home, PlusCircle, Bookmark, User as UserIcon } from "lucide-react";
+import { Loader2, Home, PlusCircle, Bookmark, User as UserIcon, MailWarning, RefreshCw, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 
 function KarmaChip({ balance }: { balance: number }) {
   return (
@@ -16,9 +17,11 @@ function KarmaChip({ balance }: { balance: number }) {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, resendVerificationEmail, reloadUser, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [resending, setResending] = useState(false);
+  const [reloading, setReloading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -28,6 +31,86 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Email verification block
+  if (!user.emailVerified) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="card-surface p-8 max-w-md w-full space-y-6 flex flex-col items-center"
+        >
+          <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mb-2">
+            <MailWarning className="w-8 h-8 text-amber-500" />
+          </div>
+          <h2 className="text-2xl font-bold">Verify Your Email</h2>
+          <p className="text-muted-foreground">
+            We sent a verification link to <span className="font-medium text-foreground">{user.email}</span>.
+            Please verify your email to access your KarmaGig account.
+          </p>
+
+          <div className="w-full space-y-3 pt-4">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={async () => {
+                setReloading(true);
+                try {
+                  await reloadUser();
+                  // check again after reload
+                  if (user.emailVerified) {
+                    toast.success("Email verified successfully!");
+                  } else {
+                    toast.error("Email not verified yet.");
+                  }
+                } catch (err) {
+                  toast.error("Error checking verification status.");
+                } finally {
+                  setReloading(false);
+                }
+              }}
+              disabled={reloading || resending}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition"
+            >
+              {reloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+              I've Verified (Refresh)
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={async () => {
+                setResending(true);
+                try {
+                  await resendVerificationEmail();
+                  toast.success("Verification email resent!");
+                } catch (err: any) {
+                  if (err.code === "auth/too-many-requests") {
+                    toast.error("Too many requests. Please wait a bit.");
+                  } else {
+                    toast.error("Failed to resend email.");
+                  }
+                } finally {
+                  setResending(false);
+                }
+              }}
+              disabled={reloading || resending}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-input border border-border hover:bg-white/5 transition"
+            >
+              Resend Verification Email
+            </motion.button>
+            <button
+              onClick={() => {
+                signOut().catch(console.error);
+              }}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-red-400 font-medium transition mx-auto pt-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign out
+            </button>
+          </div>
+        </motion.div>
       </div>
     );
   }
