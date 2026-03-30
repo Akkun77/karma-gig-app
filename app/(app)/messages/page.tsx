@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Loader2, MessageSquare, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -27,13 +27,20 @@ export default function MessagesInboxPage() {
 
     const q = query(
       collection(db, "chats"),
-      where("participants", "array-contains", user.uid),
-      orderBy("updatedAt", "desc")
+      where("participants", "array-contains", user.uid)
     );
 
     const unsub = onSnapshot(q, (snap) => {
       const loaded = snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatMeta));
+      loaded.sort((a, b) => {
+        const timeA = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : 0;
+        const timeB = b.updatedAt?.toMillis ? b.updatedAt.toMillis() : 0;
+        return timeB - timeA;
+      });
       setChats(loaded);
+      setLoading(false);
+    }, (error) => {
+      console.error("Messages listening error:", error);
       setLoading(false);
     });
 
