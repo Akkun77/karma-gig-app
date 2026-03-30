@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import { Send, ArrowLeft, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 interface Message {
   id: string;
@@ -102,17 +103,19 @@ export default function ChatRoomPage() {
         <button onClick={() => router.back()} className="p-2 hover:bg-white/10 rounded-full transition-colors">
           <ArrowLeft className="w-5 h-5 text-muted-foreground hover:text-foreground" />
         </button>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+        <Link href={`/u/${otherUid}`} className="flex items-center gap-3 hover:bg-white/5 p-1.5 -ml-1.5 rounded-xl transition-colors cursor-pointer group">
+          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold shadow-md group-hover:scale-105 transition-transform">
             {otherName.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h2 className="font-bold text-lg leading-tight">{otherName}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">{otherName}</h2>
+            </div>
             <p className="text-xs text-amber-500 font-medium tracking-wide flex items-center">
               Re: {gigTitle}
             </p>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Messages Feed */}

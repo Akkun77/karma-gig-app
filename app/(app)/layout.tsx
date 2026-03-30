@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import { createUserProfile } from "@/lib/auth-helpers";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { NotificationBell } from "@/components/NotificationBell";
 
 function KarmaChip({ balance }: { balance: number }) {
   return (
@@ -182,7 +183,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               })}
             </div>
 
-            <div className="flex items-center">
+            <div className="flex items-center gap-3">
+              <NotificationBell />
               <KarmaChip balance={userProfile.karmaBalance || 0} />
             </div>
           </div>

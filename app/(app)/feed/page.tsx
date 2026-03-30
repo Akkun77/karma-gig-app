@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { SwipeStack } from "@/components/SwipeStack";
@@ -9,7 +9,7 @@ import { db } from "@/lib/firebase";
 import toast from "react-hot-toast";
 
 export default function FeedPage() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,6 +52,19 @@ export default function FeedPage() {
         acceptedBy: user.uid
       });
       
+      // Real-time Push Notification Dispatcher
+      const notifRef = doc(collection(db, "notifications"));
+      batch.set(notifRef, {
+        userId: gig.postedBy, 
+        sourceId: user.uid, 
+        sourceName: userProfile?.displayName || "A Student",
+        type: "gig_accepted",
+        text: `accepted your gig "${gig.title}"!`,
+        link: "/my-gigs",
+        read: false,
+        createdAt: new Date()
+      });
+
       await batch.commit();
       toast.success("Gig accepted! Check My Gigs.");
     } catch (err) {
