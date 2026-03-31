@@ -63,8 +63,8 @@ export default function MyGigsPage() {
         completedAt: serverTimestamp(),
       });
 
-      // Atomically update BOTH balances using increment()
-      batch.update(doc(db, "users", buyerUid), { karmaBalance: increment(-gig.karmaPrice) });
+      // Escrow already deducted the Karma upfront. 
+      // Only pay the Seller now.
       batch.update(doc(db, "users", sellerUid), { karmaBalance: increment(gig.karmaPrice) });
 
       // Notify the acceptor (seller) that Karma landed
@@ -94,7 +94,15 @@ export default function MyGigsPage() {
     const confirmed = confirm("Are you sure you want to delete this gig?");
     if (!confirmed) return;
     try {
-      await deleteDoc(doc(db, "gigs", gig.id));
+      if (gig.type === "looking_for") {
+        // Refund Karma to poster since it was escrowed
+        const batch = writeBatch(db);
+        batch.delete(doc(db, "gigs", gig.id));
+        batch.update(doc(db, "users", user.uid), { karmaBalance: increment(gig.karmaPrice) });
+        await batch.commit();
+      } else {
+        await deleteDoc(doc(db, "gigs", gig.id));
+      }
       toast.success("Gig deleted successfully.");
       setGigs(prev => prev.filter(g => g.id !== gig.id));
     } catch(err) {
@@ -183,7 +191,13 @@ export default function MyGigsPage() {
             <p className="text-muted-foreground font-medium">No gigs found here.</p>
           </div>
         ) : (
-          gigs.map(gig => (
+          gigs.map(gig => {
+            const isBuyer = (gig.type === "looking_for" && activeTab === "posted" && gig.postedBy === user?.uid) ||
+                            (gig.type === "offering" && activeTab === "accepted" && gig.acceptedBy === user?.uid);
+            const isSeller = (gig.type === "looking_for" && activeTab === "accepted" && gig.acceptedBy === user?.uid) ||
+                             (gig.type === "offering" && activeTab === "posted" && gig.postedBy === user?.uid);
+                             
+            return (
             <div key={gig.id} className="card-surface p-6 glass flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-primary/30 transition-colors">
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-3">
@@ -221,8 +235,8 @@ export default function MyGigsPage() {
                     </button>
                   )}
 
-                  {/* POSTER: "Gig is Completed" confirmation button */}
-                  {gig.status === "in_progress" && activeTab === "posted" && gig.postedBy === user?.uid && (
+                  {/* BUYER: "Gig is Completed" confirmation button */}
+                  {gig.status === "in_progress" && isBuyer && (
                     <button
                       onClick={() => handleMarkComplete(gig)}
                       className="flex items-center gap-2 px-6 py-2.5 bg-green-500 hover:bg-green-400 text-black font-black rounded-xl transition shadow-lg shadow-green-500/30 animate-pulse"
@@ -231,10 +245,10 @@ export default function MyGigsPage() {
                     </button>
                   )}
 
-                  {/* ACCEPTOR: Waiting badge shown in their "Accepted by Me" tab */}
-                  {gig.status === "in_progress" && activeTab === "accepted" && gig.acceptedBy === user?.uid && (
+                  {/* SELLER: Waiting badge shown for the service provider */}
+                  {gig.status === "in_progress" && isSeller && (
                     <span className="flex items-center gap-2 px-5 py-2 text-blue-400 bg-blue-500/10 border border-blue-500/20 font-bold rounded-xl text-sm">
-                      <Clock size={15} /> Awaiting Poster Confirmation
+                      <Clock size={15} /> Awaiting Buyer Confirmation
                     </span>
                   )}
 
@@ -257,7 +271,8 @@ export default function MyGigsPage() {
                 </div>
               </div>
             </div>
-          ))
+          );
+          })
         )}
       </div>
     </div>

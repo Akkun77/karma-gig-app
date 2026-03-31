@@ -31,7 +31,7 @@ export function SearchBar({ activeCategory, onSearch, onCategoryChange }: {
   };
 
   return (
-    <div className="w-full space-y-4 mb-6">
+    <div className="w-full space-y-2 mb-2">
       <div className="relative group">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
           <Search className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -54,7 +54,7 @@ export function SearchBar({ activeCategory, onSearch, onCategoryChange }: {
       </div>
 
       {/* Category Chips */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
         <div className="flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full card-surface border-border text-sm text-foreground shadow-sm opacity-80">
           <Filter className="h-3 w-3" /> Filters
         </div>

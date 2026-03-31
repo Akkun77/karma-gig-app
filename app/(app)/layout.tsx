@@ -2,13 +2,13 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Loader2, Home, PlusCircle, Bookmark, User as UserIcon, MailWarning, RefreshCw, LogOut, MessageSquare, Building2, MapPin, Sparkles } from "lucide-react";
+import { Loader2, Home, PlusCircle, Bookmark, User as UserIcon, MailWarning, RefreshCw, LogOut, MessageSquare, Building2, MapPin, Sparkles, LayoutList } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { createUserProfile } from "@/lib/auth-helpers";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { NotificationBell } from "@/components/NotificationBell";
 
 function KarmaChip({ balance }: { balance: number }) {
@@ -43,15 +43,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const handleRefreshStatus = async () => {
     setChecking(true);
     try {
+      // Reload and force-refresh token from Firebase server
       await reloadUser();
-      if (user?.emailVerified && !userProfile) {
-        // Email is verified but no profile exists — show onboarding form
-        const ref = doc(db, "users", user.uid);
+      
+      // IMPORTANT: Read from auth.currentUser (source of truth), NOT the stale 
+      // 'user' closure variable, which is the state from before the reload.
+      const freshUser = auth.currentUser;
+      
+      if (freshUser?.emailVerified) {
+        // Email is verified — check if profile needs creating
+        const ref = doc(db, "users", freshUser.uid);
         const snap = await getDoc(ref);
         if (!snap.exists()) {
           setShowOnboarding(true);
+        } else {
+          toast.success("Email verified! Welcome back.");
         }
-      } else if (!user?.emailVerified) {
+      } else {
         toast.error("Email is still not verified. Check your inbox!");
       }
     } catch (err) {
@@ -337,6 +345,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // 4. Fully Verified & Profile Loaded -> Standard App Layout
   const navLinks = [
     { name: "Feed", href: "/feed", icon: Home },
+    { name: "Gigs", href: "/gigs", icon: LayoutList },
     { name: "Post", href: "/post", icon: PlusCircle },
     { name: "Messages", href: "/messages", icon: MessageSquare },
     { name: "My Gigs", href: "/my-gigs", icon: Bookmark },

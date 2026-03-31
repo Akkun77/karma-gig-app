@@ -92,10 +92,10 @@ export default function FeedPage() {
   });
 
   return (
-    <div className="flex flex-col h-full max-h-[800px]">
-      <div className="mb-4">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Gig Feed</h1>
-        <p className="text-muted-foreground">Swipe right to accept, left to pass.</p>
+    <div className="flex flex-col h-full">
+      <div className="mb-2">
+        <h1 className="text-2xl font-bold tracking-tight mb-1">Gig Feed</h1>
+        <p className="text-muted-foreground text-sm">Swipe right to accept, left to pass.</p>
       </div>
 
       <SearchBar 
@@ -104,7 +104,7 @@ export default function FeedPage() {
         onCategoryChange={setActiveCategory} 
       />
 
-      <div className="flex-1 min-h-[500px] mt-4 flex justify-center pb-8">
+      <div className="flex-1 flex justify-center mt-2 pb-8">
         {loading ? (
           <div className="flex flex-col items-center justify-center space-y-4">
             <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />

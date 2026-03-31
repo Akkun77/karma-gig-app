@@ -56,21 +56,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
       if (firebaseUser) {
-        // subscribe to live profile updates (if it exists)
-        const ref = doc(db, "users", firebaseUser.uid);
-        const profileUnsub = onSnapshot(ref, (snap) => {
-          if (snap.exists()) {
-            setUserProfile(snap.data() as UserProfile);
-          } else {
-            // WE EXPLICITLY DO NOT AUTO-CREATE PROFILES HERE ANYMORE.
-            setUserProfile(null);
-          }
-        });
-        setLoading(false);
-        return () => profileUnsub();
+        // SECURITY: Always reload the token from Firebase's server on every 
+        // auth state change. This prevents stale cached tokens from bypassing 
+        // email verification (e.g. a page refresh after clicking the lock screen button).
+        try {
+          await firebaseUser.reload();
+        } catch {
+          // If reload fails (network issue), sign out to be safe
+          await firebaseUser.getIdToken(true).catch(() => null);
+        }
+        // Read from auth.currentUser after reload to get the freshest state
+        const freshUser = auth.currentUser;
+        setUser(freshUser);
+
+        if (freshUser) {
+          const ref = doc(db, "users", freshUser.uid);
+          const profileUnsub = onSnapshot(ref, (snap) => {
+            if (snap.exists()) {
+              setUserProfile(snap.data() as UserProfile);
+            } else {
+              setUserProfile(null);
+            }
+          });
+          setLoading(false);
+          return () => profileUnsub();
+        }
       } else {
+        setUser(null);
         setUserProfile(null);
         setLoading(false);
       }
@@ -106,7 +119,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function reloadUser() {
     if (auth.currentUser) {
+      // Force Firebase to re-check email verification status from the server
       await auth.currentUser.reload();
+      // Force-refresh the ID token so the cache reflects the server's latest state
+      await auth.currentUser.getIdToken(true);
+      // Spread auth.currentUser to trigger a re-render with the latest emailVerified value
       setUser({ ...auth.currentUser } as User);
     }
   }

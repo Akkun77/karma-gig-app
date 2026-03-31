@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, doc, writeBatch, serverTimestamp, getDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { KarmaPricingEngine } from "@/components/KarmaPricingEngine";
 import { KarmaInputs } from "@/lib/karma-engine";
@@ -31,7 +31,23 @@ export default function PostGigPage() {
     setLoading(true);
 
     try {
-      await addDoc(collection(db, "gigs"), {
+      const isLookingFor = type === "looking_for";
+      const userRef = doc(db, "users", user.uid);
+
+      if (isLookingFor) {
+        const userSnap = await getDoc(userRef);
+        const currentKarma = userSnap.data()?.karmaBalance || 0;
+        if (currentKarma < computedKarma) {
+          toast.error(`Insufficient balance! You need ${computedKarma} Karma to post this gig.`);
+          setLoading(false);
+          return;
+        }
+      }
+
+      const batch = writeBatch(db);
+      const newGigRef = doc(collection(db, "gigs"));
+
+      batch.set(newGigRef, {
         type,
         category,
         title,
@@ -43,6 +59,13 @@ export default function PostGigPage() {
         status: "open",
         createdAt: serverTimestamp()
       });
+
+      if (isLookingFor) {
+        batch.update(userRef, { karmaBalance: increment(-computedKarma) });
+      }
+
+      await batch.commit();
+
       toast.success("Gig posted successfully!");
       router.push("/feed");
     } catch (err: any) {
