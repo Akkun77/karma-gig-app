@@ -1,4 +1,5 @@
-import { db } from "./firebase";
+const fs = require('fs');
+const content = `import { db } from "./firebase";
 import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, runTransaction } from "firebase/firestore";
 
 export interface Gig {
@@ -84,7 +85,7 @@ export async function flagGig(gigId: string, flaggerUid: string): Promise<void> 
         tx.set(penaltyNotif, {
           userId: dbGig.postedBy,
           type: "penalty",
-          text: `Your gig "${dbGig.title}" was removed due to community flags. -10 Karma.`,
+          text: \`Your gig "\${dbGig.title}" was removed due to community flags. -10 Karma.\`,
           read: false,
           createdAt: serverTimestamp(),
         });
@@ -99,7 +100,7 @@ export async function flagGig(gigId: string, flaggerUid: string): Promise<void> 
           tx.set(rewardNotif, {
             userId: fUid,
             type: "reward",
-            text: `A gig you flagged was removed. You earned +2 Karma for moderating!`,
+            text: \`A gig you flagged was removed. You earned +2 Karma for moderating!\`,
             read: false,
             createdAt: serverTimestamp(),
           });
@@ -157,10 +158,12 @@ export async function completeGigWithReview(gigId: string, rating: number, revie
       userId: sellerUid,
       sourceId: buyerUid,
       type: "gig_completed",
-      text: `Your gig "${gig.title}" was completed! +${gig.karmaPrice} Karma and a ${rating}-star review.`,
+      text: \`Your gig "\${gig.title}" was completed! +\${gig.karmaPrice} Karma and a \${rating}-star review.\`,
       link: "/profile",
       read: false,
       createdAt: serverTimestamp(),
     });
   });
 }
+`;
+fs.writeFileSync('lib/firestore-helpers.ts', content);

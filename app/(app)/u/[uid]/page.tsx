@@ -130,14 +130,12 @@ export default function PublicProfilePage({ params }: { params: { uid: string } 
             </div>
           </div>
           <div className="bg-background/50 rounded-2xl p-4 flex flex-col items-center justify-center border border-white/5 shadow-inner">
-            <div className="flex items-center gap-1 mb-1">
-              <Star className="text-blue-400 fill-blue-400 w-4 h-4" />
-              <Star className="text-blue-400 fill-blue-400 w-4 h-4" />
-              <Star className="text-blue-400 fill-blue-400 w-4 h-4" />
-              <Star className="text-blue-400 fill-blue-400 w-4 h-4" />
-              <Star className="text-blue-400 fill-blue-400 w-4 h-4" />
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-2xl font-black">{profile.rating ? profile.rating.toFixed(1) : "New"}</span>
+              <Star className="text-yellow-400 fill-yellow-400 w-6 h-6 drop-shadow-md" />
             </div>
-            <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Top Rated</span>
+            <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Avg Rating</span>
+            
             <span className="text-xs text-muted-foreground mt-1 opacity-70">({profile.reviewCount || 0} reviews)</span>
           </div>
         </div>

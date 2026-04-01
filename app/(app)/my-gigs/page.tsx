@@ -4,6 +4,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { collection, query, where, getDocs, doc, writeBatch, deleteDoc, addDoc, serverTimestamp, getDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { completeGigWithReview } from "@/lib/firestore-helpers";
+import { ReviewModal } from "@/components/ReviewModal";
 import { Gig } from "@/components/GigCard";
 import { Loader2, CheckCircle2, Trash2, MessageSquare, Clock, PartyPopper, Star } from "lucide-react";
 import toast from "react-hot-toast";
@@ -14,6 +16,7 @@ export default function MyGigsPage() {
   const [activeTab, setActiveTab] = useState<"posted" | "accepted">("posted");
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewGig, setReviewGig] = useState<Gig | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -36,56 +39,23 @@ export default function MyGigsPage() {
     loadMyGigs();
   }, [user, activeTab]);
 
-  const handleMarkComplete = async (gig: Gig) => {
+  
+  const handleMarkComplete = (gig: Gig) => {
     if (!user || gig.status !== "in_progress") return;
-    const confirmed = confirm(`Mark "${gig.title}" as complete and transfer ${gig.karmaPrice} Karma?`);
-    if (!confirmed) return;
+    setReviewGig(gig);
+  };
+
+  const handleReviewSubmit = async (rating: number, reviewText: string) => {
+    if (!user || !reviewGig) return;
     try {
-      const batch = writeBatch(db);
-      const gigRef = doc(db, "gigs", gig.id);
-
-      // Determine who pays & who earns
-      const isLookingFor = gig.type === "looking_for";
-      const buyerUid = isLookingFor ? gig.postedBy : gig.acceptedBy!;
-      const sellerUid = isLookingFor ? gig.acceptedBy! : gig.postedBy;
-
-      // Mark gig complete
-      batch.update(gigRef, { status: "complete" });
-
-      // Record transaction
-      const txRef = doc(collection(db, "transactions"));
-      batch.set(txRef, {
-        gigId: gig.id,
-        gigTitle: gig.title,
-        buyerUid,
-        sellerUid,
-        karmaAmount: gig.karmaPrice,
-        completedAt: serverTimestamp(),
-      });
-
-      // Escrow already deducted the Karma upfront. 
-      // Only pay the Seller now.
-      batch.update(doc(db, "users", sellerUid), { karmaBalance: increment(gig.karmaPrice) });
-
-      // Notify the acceptor (seller) that Karma landed
-      const notifRef = doc(collection(db, "notifications"));
-      batch.set(notifRef, {
-        userId: sellerUid,
-        sourceId: user.uid,
-        sourceName: userProfile?.displayName || "Someone",
-        type: "gig_accepted",
-        text: `confirmed your gig "${gig.title}" complete! +${gig.karmaPrice} Karma earned! 🎉`,
-        link: "/my-gigs",
-        read: false,
-        createdAt: serverTimestamp(),
-      });
-
-      await batch.commit();
-      toast.success(`🎉 Gig complete! ${gig.karmaPrice} Karma transferred.`);
-      setGigs(prev => prev.map(g => g.id === gig.id ? { ...g, status: "complete" } as Gig : g));
-    } catch (err) {
+      await completeGigWithReview(reviewGig.id, rating, reviewText);
+      toast.success(`?? Gig complete! ${reviewGig.karmaPrice} Karma transferred & review submitted.`);
+      setGigs((prev) => prev.map((g) => (g.id === reviewGig.id ? { ...g, status: "complete" } as Gig : g)));
+      setReviewGig(null);
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to mark complete.");
+      toast.error(err.message || "Failed to complete gig.");
+      setReviewGig(null);
     }
   };
 
@@ -275,6 +245,14 @@ export default function MyGigsPage() {
           })
         )}
       </div>
+    
+      {reviewGig && (
+        <ReviewModal
+          isOpen={!!reviewGig}
+          sellerName={reviewGig.type === "offering" ? reviewGig.postedByName : "Service Provider"}
+          onSubmit={handleReviewSubmit}
+        />
+      )}
     </div>
   );
 }

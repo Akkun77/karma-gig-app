@@ -1,8 +1,11 @@
 "use client";
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
-import { MapPin, Clock, Zap, Target, Truck, Palette, Code, Sparkles, AlertCircle } from "lucide-react";
+import { Flag, MapPin, Clock, Zap, Target, Truck, Palette, Code, Sparkles, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { flagGig } from '@/lib/firestore-helpers';
+import toast from 'react-hot-toast'; from "next/navigation";
 
 export interface Gig {
   id: string;
@@ -36,7 +39,21 @@ const CategoryMap: Record<string, { label: string; icon: any; color: string }> =
   other: { label: "✨ Other", icon: AlertCircle, color: "text-gray-400 bg-gray-500/20 border-gray-500/30" },
 };
 
-export function GigCard({ gig, onAccept, onPass, index, isTop }: GigCardProps) {
+export function GigCard({
+  const handleFlag = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+    try {
+      await flagGig(gig.id, user.uid);
+      toast.success("Gig flagged for moderation");
+      onPass(gig.id);
+    } catch (err: any) {
+      toast.error(err.message || "Could not flag gig");
+    }
+  };
+
+  const { user } = useAuth();
+ gig, onAccept, onPass, index, isTop }: GigCardProps) {
   const router = useRouter();
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-10, 10]);
@@ -148,7 +165,12 @@ export function GigCard({ gig, onAccept, onPass, index, isTop }: GigCardProps) {
               
               <div className="flex flex-col items-end">
                 <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-80 mb-1">Karma Price</span>
-                <span className="text-4xl font-black karma-gradient drop-shadow-md">{gig.karmaPrice}</span>
+                <div className="flex items-center gap-3">
+                  <button onClick={handleFlag} className="text-muted-foreground hover:text-red-400 p-2 rounded-full hover:bg-red-500/10 transition-colors" title="Flag as miscategorized/inappropriate">
+                    <Flag size={20} />
+                  </button>
+                  <span className="text-4xl font-black karma-gradient drop-shadow-md">{gig.karmaPrice}</span>
+                </div>
               </div>
             </div>
           </div>
