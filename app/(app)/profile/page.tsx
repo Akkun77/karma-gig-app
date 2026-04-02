@@ -1,12 +1,22 @@
 "use client";
 import { useAuth } from "@/context/AuthContext";
+import { deleteAccountData } from "@/lib/firestore-helpers";
+import { deleteUser } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { motion } from "framer-motion";
-import { LogOut, User as UserIcon, Calendar, Zap, Star, Building2, MapPin, Pencil, Check, X } from "lucide-react";
+import { LogOut, User as UserIcon, Calendar, Zap, Star, Building2, MapPin, Pencil, Check, X, Clock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState } from "react";
-import { doc, updateDoc } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { doc, updateDoc, collection, query, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import toast from "react-hot-toast";
+
+interface Review {
+  id: string;
+  rating: number;
+  text?: string;
+  createdAt: Date;
+}
 
 export default function ProfilePage() {
   const { user, userProfile, signOut } = useAuth();
@@ -16,6 +26,30 @@ export default function ProfilePage() {
   const [majorDraft, setMajorDraft] = useState("");
   const [locationDraft, setLocationDraft] = useState("");
   const [saving, setSaving] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    async function fetchReviews() {
+      try {
+        const reviewsQ = query(collection(db, "users", user!.uid, "reviews"));
+        const reviewsSnap = await getDocs(reviewsQ);
+        const fetchedReviews = reviewsSnap.docs.map(d => {
+          const data = d.data();
+          return {
+            id: d.id,
+            rating: data.rating || 5,
+            text: data.text || data.reviewText || data.comment || "",
+            createdAt: data.createdAt?.toDate() || new Date()
+          };
+        }).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
+        setReviews(fetchedReviews);
+      } catch (err) {
+        console.error("Failed to fetch reviews:", err);
+      }
+    }
+    fetchReviews();
+  }, [user]);
 
   if (!user || !userProfile) return null;
 
@@ -80,7 +114,7 @@ export default function ProfilePage() {
               <div className="text-4xl font-black karma-gradient">{userProfile.karmaBalance || 0}</div>
             </div>
             <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-              <span className="text-3xl">🪙</span>
+              <span className="text-3xl">??</span>
             </div>
           </div>
           
@@ -213,6 +247,43 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+      </motion.div>
+
+      {/* RECENT REVIEWS SECTION */}
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="space-y-4"
+      >
+        <h2 className="text-xl font-bold flex items-center gap-2 px-2">
+          <Star className="text-yellow-500 fill-yellow-500 w-5 h-5" /> My Recent Reviews
+        </h2>
+        
+        {reviews.length === 0 ? (
+          <div className="card-surface glass p-8 text-center text-muted-foreground font-medium">
+            You don't have any reviews yet. Complete gigs to get reviews!
+          </div>
+        ) : (
+          <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+            {reviews.map((rev) => (
+              <div key={rev.id} className="card-surface p-4 flex flex-col hover:bg-white/5 transition-colors gap-2">
+                <div className="flex justify-between items-center mb-1">
+                  <div className="flex items-center gap-1 bg-yellow-500/10 px-2 py-1 rounded-md border border-yellow-500/20">
+                    <span className="text-xs font-black text-yellow-500">{rev.rating}.0</span>
+                    <Star className="text-yellow-500 fill-yellow-500 w-3 h-3" />
+                  </div>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> {rev.createdAt.toLocaleDateString()}
+                  </span>
+                </div>
+                {rev.text && (
+                  <p className="text-sm text-foreground/90 italic leading-relaxed">"{rev.text}"</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </motion.div>
 
     </div>

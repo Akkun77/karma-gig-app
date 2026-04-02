@@ -97,13 +97,15 @@ export default function MyGigsPage() {
     if (!otherUid) return toast.error("No one has accepted this gig yet.");
 
     try {
-      const q = query(collection(db, "chats"), where("gigId", "==", gig.id));
+      const q = query(collection(db, "chats"), where("participants", "array-contains", user.uid));
       const snaps = await getDocs(q);
-      
+      const existingChat = snaps.docs.find(d => {
+        const p = d.data().participants || [];
+        return p.includes(otherUid);
+      });
       let chatId = "";
-      
-      if (!snaps.empty) {
-        chatId = snaps.docs[0].id;
+      if (existingChat) {
+        chatId = existingChat.id;
       } else {
         const otherNameFetch = async () => {
           if (gig.postedBy !== user.uid) return gig.postedByName;
@@ -248,7 +250,7 @@ export default function MyGigsPage() {
                       <span className="flex items-center gap-2 px-5 py-2 text-green-400 bg-green-500/10 border border-green-500/20 font-bold rounded-xl text-sm">
                         <PartyPopper size={15} /> {activeTab === "accepted" ? `+${gig.karmaPrice} Karma Earned!` : `Completed`}
                       </span>
-                      {isBuyer && !(gig as any).reviewedLocally && (
+                      {isBuyer && !gig.hasBeenReviewed && !(gig as any).reviewedLocally && (
                         <button
                           onClick={() => setReviewGig(gig)}
                           className="flex items-center gap-2 px-5 py-2 bg-yellow-500 text-black hover:bg-yellow-400 font-bold rounded-xl transition shadow-lg shadow-yellow-500/30"

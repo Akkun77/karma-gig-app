@@ -65,7 +65,7 @@ export function SwipeStack({ gigs, onSwipeRight, onSwipeLeft }: {
 
   return (
     <div className="relative w-full flex items-center justify-center pointer-events-none">
-      <div className="relative w-full max-w-[400px]">
+      <div className="relative w-full max-w-[400px] h-[65vh] max-h-[600px] min-h-[450px]">
         <AnimatePresence>
           {activeGigs.map((gig, index) => (
             <GigCard

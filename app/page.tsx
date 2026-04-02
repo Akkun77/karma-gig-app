@@ -93,7 +93,32 @@ export default function LandingPage() {
             </div>
           ))}
         </motion.div>
+      
+        {/* Trust and Safety */}
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-20 max-w-4xl w-full text-left p-8 rounded-[2rem] glass border border-red-500/20 bg-red-500/5 relative overflow-hidden"
+        >
+          <div className="absolute top-0 left-0 w-2 h-full bg-red-500" />
+          <h2 className="text-2xl font-black text-foreground mb-4">?? Zero Tolerance Policy</h2>
+          <p className="text-muted-foreground font-medium leading-relaxed">
+            UniG is an exclusive campus utility designed for trust. We actively monitor the ecosystem. 
+            <strong> Selling illicit substances, weapons, or offering illegal services will trigger permanent law-enforcement escalations and device bans.</strong> 
+            <br/><br/>
+            Additionally, users weaponizing or abusing the 'Report' feature against peers for fun will face immediate Karma wipes and network expulsion. Play fair.
+          </p>
+        </motion.div>
       </main>
+
+      {/* Footer Credits */}
+      <footer className="w-full text-center py-8 z-10 border-t border-white/5 opacity-80">
+        <p className="text-sm font-bold text-muted-foreground tracking-widest uppercase">
+          ? Created by Animesh Pandey
+        </p>
+      </footer>
+
     </div>
   );
 }

@@ -20,6 +20,8 @@ export interface Gig {
   status: "open" | "in_progress" | "complete";
   acceptedBy?: string;
   createdAt?: any;
+  flaggedBy?: string[];
+  hasBeenReviewed?: boolean;
 }
 
 interface GigCardProps {

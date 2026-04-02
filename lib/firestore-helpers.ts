@@ -1,5 +1,5 @@
 import { db } from "./firebase";
-import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, runTransaction } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, runTransaction, query, where, getDocs, deleteDoc, writeBatch } from "firebase/firestore";
 
 export interface Gig {
   id: string;
@@ -14,6 +14,7 @@ export interface Gig {
   acceptedBy?: string;
   createdAt: unknown;
   flaggedBy?: string[];
+  hasBeenReviewed?: boolean;
 }
 
 export async function acceptGig(gigId: string, acceptorUid: string): Promise<void> {
@@ -74,9 +75,16 @@ export async function flagGig(gigId: string, flaggerUid: string): Promise<void> 
     if (flaggedBy.includes(flaggerUid)) throw new Error("You have already flagged this gig.");
     flaggedBy.push(flaggerUid);
     if (flaggedBy.length === 3) {
-      tx.update(gigRef, { status: "removed", flaggedBy });
       const posterRef = doc(db, "users", dbGig.postedBy);
       const posterSnap = await tx.get(posterRef);
+      
+      const flaggerInfos = [];
+      for (const fUid of flaggedBy) {
+        const fSnap = await tx.get(doc(db, "users", fUid));
+        flaggerInfos.push({ fUid, fSnap });
+      }
+
+      tx.update(gigRef, { status: "removed", flaggedBy });
       if (posterSnap.exists()) {
         const currentKarma = posterSnap.data().karmaBalance ?? 0;
         tx.update(posterRef, { karmaBalance: currentKarma - 10 });
@@ -89,15 +97,13 @@ export async function flagGig(gigId: string, flaggerUid: string): Promise<void> 
           createdAt: serverTimestamp(),
         });
       }
-      for (const fUid of flaggedBy) {
-        const flaggerRef = doc(db, "users", fUid);
-        const fSnap = await tx.get(flaggerRef);
-        if (fSnap.exists()) {
-          const fKarma = fSnap.data().karmaBalance ?? 0;
-          tx.update(flaggerRef, { karmaBalance: fKarma + 2 });
+      for (const info of flaggerInfos) {
+        if (info.fSnap.exists()) {
+          const fKarma = info.fSnap.data().karmaBalance ?? 0;
+          tx.update(doc(db, "users", info.fUid), { karmaBalance: fKarma + 2 });
           const rewardNotif = doc(collection(db, "notifications"));
           tx.set(rewardNotif, {
-            userId: fUid,
+            userId: info.fUid,
             type: "reward",
             text: `A gig you flagged was removed. You earned +2 Karma for moderating!`,
             read: false,
@@ -121,9 +127,10 @@ export async function completeGigWithReview(gigId: string, rating: number, revie
     const isLookingFor = gig.type === "looking_for";
     const sellerUid = isLookingFor ? gig.acceptedBy! : gig.postedBy;
     const buyerUid = isLookingFor ? gig.postedBy : gig.acceptedBy!;
-    tx.update(gigRef, { status: "complete" });
     const sellerRef = doc(db, "users", sellerUid);
     const sellerSnap = await tx.get(sellerRef);
+    if (!sellerSnap.exists()) throw new Error("Seller profile not found.");
+    tx.update(gigRef, { status: "complete" });
     if (!sellerSnap.exists()) throw new Error("Seller profile not found.");
     const sellerData = sellerSnap.data();
     const currentKarma = sellerData.karmaBalance ?? 0;
@@ -173,13 +180,15 @@ export async function submitReview(gigId: string, rating: number, reviewText?: s
     if (!gigSnap.exists()) throw new Error("Gig not found.");
     const gig = gigSnap.data() as Gig;
     if (gig.status !== "complete") throw new Error("Gig must be complete to review.");
-
+    if (gig.hasBeenReviewed) throw new Error("Gig already reviewed.");
     const isLookingFor = gig.type === "looking_for";
     const sellerUid = isLookingFor ? gig.acceptedBy! : gig.postedBy;
     const buyerUid = isLookingFor ? gig.postedBy : gig.acceptedBy!;
 
     const sellerRef = doc(db, "users", sellerUid);
     const sellerSnap = await tx.get(sellerRef);
+    if (!sellerSnap.exists()) throw new Error("Seller profile not found.");
+    tx.update(gigRef, { hasBeenReviewed: true });
     if (!sellerSnap.exists()) throw new Error("Seller profile not found.");
     
     const sellerData = sellerSnap.data();
@@ -214,4 +223,29 @@ export async function submitReview(gigId: string, rating: number, reviewText?: s
       createdAt: serverTimestamp(),
     });
   });
+}
+
+
+export async function deleteAccountData(uid: string): Promise<void> {
+  const batch = writeBatch(db);
+
+  // 1. Find all gigs posted by this user
+  const gigsQuery = query(collection(db, "gigs"), where("postedBy", "==", uid));
+  const gigsSnap = await getDocs(gigsQuery);
+  gigsSnap.forEach((docSnap) => {
+    batch.delete(docSnap.ref);
+  });
+
+  // 2. Find all chats this user is a participant of
+  const chatsQuery = query(collection(db, "chats"), where("participants", "array-contains", uid));
+  const chatsSnap = await getDocs(chatsQuery);
+  chatsSnap.forEach((docSnap) => {
+    batch.delete(docSnap.ref);
+  });
+
+  // 3. Delete the user profile document itself
+  batch.delete(doc(db, "users", uid));
+
+  // Execute the mass deletion
+  await batch.commit();
 }

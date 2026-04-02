@@ -13,7 +13,8 @@ import {
   updateDoc,
   serverTimestamp,
   getDoc,
-  limit
+  limit,
+  deleteDoc
 } from "firebase/firestore";
 import { Send, ArrowLeft, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -90,13 +91,25 @@ export default function ChatRoomPage() {
     }
   };
 
+
+  const handleDelete = async (msgId: string) => {
+    if (window.confirm("Delete this message for everyone?")) {
+      try {
+        await deleteDoc(doc(db, "chats", chatId, "messages", msgId));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
   const currentUid = user?.uid;
+
   const otherUid = activeChat?.participants?.find((p: string) => p !== currentUid);
   const otherName = activeChat?.participantNames?.[otherUid] || "Student";
   const gigTitle = activeChat?.gigTitle || "Unknown Gig";
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] max-w-4xl mx-auto -mt-6 overflow-x-hidden w-full">
+    <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] max-w-4xl mx-auto overflow-x-hidden w-full">
       
       {/* Header */}
       <div className="bg-background/95 backdrop-blur-xl px-4 py-3 flex items-center gap-4 z-50 sticky top-16 md:top-20 border-b border-white/5 shadow-md">
@@ -119,7 +132,7 @@ export default function ChatRoomPage() {
       </div>
 
       {/* Messages Feed */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-4 space-y-3 pb-36 overscroll-contain w-full">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-20 space-y-3 pb-36 overscroll-contain w-full">
         {loading ? (
           <div className="h-full flex items-center justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -144,7 +157,8 @@ export default function ChatRoomPage() {
                   className={`flex ${isMe ? "justify-end" : "justify-start"} w-full min-w-0`}
                 >
                   <div
-                    className={`max-w-[72%] min-w-0 px-4 py-2.5 shadow-sm text-[15px] leading-relaxed break-words overflow-hidden ${
+                    onClick={() => isMe && handleDelete(m.id)}
+                    className={`max-w-[72%] cursor-pointer min-w-0 px-4 py-2.5 shadow-sm text-[15px] leading-relaxed break-words overflow-hidden hover:opacity-90 transition-opacity ${
                       isMe
                         ? "bg-primary text-white"
                         : "card-surface glass text-foreground"

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { SwipeStack } from "@/components/SwipeStack";
 import { SearchBar } from "@/components/SearchBar";
+import { AlertTriangle } from "lucide-react";
 import { Gig } from "@/components/GigCard";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -71,11 +72,14 @@ export default function FeedPage() {
   });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col min-h-full relative pb-20">
       <div className="mb-2">
         <h1 className="text-2xl font-bold tracking-tight mb-1">Gig Feed</h1>
         <p className="text-muted-foreground text-sm">Swipe right to accept, left to pass.</p>
       </div>
+
+      
+      
 
       <SearchBar 
         activeCategory={activeCategory} 
@@ -83,7 +87,7 @@ export default function FeedPage() {
         onCategoryChange={setActiveCategory} 
       />
 
-      <div className="flex-1 flex justify-center mt-2 pb-8">
+      <div className="flex justify-center mt-4 mb-4 w-full relative z-10 shrink-0">
         {loading ? (
           <div className="flex flex-col items-center justify-center space-y-4">
             <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
@@ -96,6 +100,17 @@ export default function FeedPage() {
             onSwipeLeft={handleSwipeLeft}
           />
         )}
+      </div>
+
+      <div className="mt-8 mb-4 relative z-0 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3 w-full max-w-sm mx-auto shrink-0">
+        <AlertTriangle className="text-red-500 shrink-0 w-6 h-6" />
+        <div>
+          <h3 className="font-bold text-red-500 text-sm">Community Safety Lock</h3>
+          <p className="text-red-400 text-xs mt-1 leading-relaxed">
+            UniG actively monitors this ecosystem. Selling drugs, illegal services, or weapons will result in permanent device bans.
+            Trolls falsely reporting peers to abuse the penalty system will face immediate Karma wipes and expulsion from the network.
+          </p>
+        </div>
       </div>
     </div>
   );

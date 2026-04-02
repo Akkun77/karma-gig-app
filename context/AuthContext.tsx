@@ -34,6 +34,8 @@ export interface UserProfile {
   avatarUrl?: string | null;
   major?: string;
   campusLocation?: string;
+  status?: string;
+  reportedBy?: string[];
 }
 
 interface AuthContextType {

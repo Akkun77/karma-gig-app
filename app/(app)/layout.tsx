@@ -2,7 +2,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Loader2, Home, PlusCircle, Bookmark, User as UserIcon, MailWarning, RefreshCw, LogOut, MessageSquare, Building2, MapPin, Sparkles, LayoutList } from "lucide-react";
+import { Loader2, Home, PlusCircle, Bookmark, User as UserIcon, MailWarning, RefreshCw, LogOut, MessageSquare, Building2, MapPin, Sparkles, LayoutList, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -32,13 +32,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [onboardLoading, setOnboardLoading] = useState(false);
 
   // Pre-fill name when user object is ready
+  
   useEffect(() => {
-    if (user?.displayName) setOnboardName(user.displayName);
-  }, [user]);
-
-  useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) {
+      router.replace("/login");
+    } else if (!loading && user) {
+      if (!user.emailVerified) {
+        router.replace("/verify-email");
+      }
+    }
   }, [user, loading, router]);
+
 
   const handleRefreshStatus = async () => {
     setChecking(true);
@@ -108,67 +112,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // 2. The Unverified Lock Screen (They cannot bypass this)
-  if (!user.emailVerified) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 shadow-2xl text-center space-y-6"
-        >
-          <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-            <MailWarning className="w-10 h-10 text-blue-500" />
-          </div>
-          
-          <div className="space-y-2">
-            <h1 className="text-2xl font-black text-foreground">Verify your university email</h1>
-            <p className="text-muted-foreground text-sm font-medium">
-              We sent a verification link to <strong className="text-foreground">{user.email}</strong>. 
-              You must click it before your account and Karma balance are generated.
-            </p>
-          </div>
-
-          <div className="space-y-3 pt-4 border-t border-white/5">
-            <button
-              onClick={handleRefreshStatus}
-              disabled={checking}
-              className="w-full py-3.5 rounded-xl font-bold bg-primary text-primary-foreground flex items-center justify-center gap-2 hover:opacity-90 transition disabled:opacity-50"
-            >
-              <RefreshCw className={`w-5 h-5 ${checking ? "animate-spin" : ""}`} />
-              I've Verified (Refresh)
-            </button>
-            
-            <button
-              onClick={() => resendVerificationEmail()}
-              className="w-full py-3.5 rounded-xl font-bold card-surface hover:bg-white/5 transition flex items-center justify-center gap-2"
-            >
-              Resend Link
-            </button>
-            
-            <button
-              onClick={() => signOut()}
-              className="w-full py-2 text-sm font-bold text-red-400 hover:text-red-300 transition flex items-center justify-center gap-2"
-            >
-              <LogOut className="w-4 h-4" /> Sign Out
-            </button>
-          </div>
-
-          <div className="mt-8 p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20 text-left space-y-2 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10" />
-            <h3 className="font-bold text-foreground flex items-center gap-2 relative z-10">
-              <span className="text-xl">✨</span> What is Karma?
-            </h3>
-            <p className="text-sm text-foreground/90 font-medium leading-relaxed relative z-10">
-              Karma is the official currency of the campus economy. 
-              Instead of cash, you <span className="text-blue-500 font-bold">earn Karma silently</span> when you complete a gig. 
-              You can then burn your Karma to have other students jump in and help you with future tasks!
-            </p>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
+  if (!user.emailVerified) return null; // Complete render halt
 
   // 2.5: Verified + Onboarding form
   if (user.emailVerified && (showOnboarding || (!userProfile && !loading))) {
@@ -342,7 +286,38 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+    // 3.8: Check Suspension
+  if (userProfile.status === "suspended") {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <motion.div
+           initial={{ opacity: 0, scale: 0.95 }}
+           animate={{ opacity: 1, scale: 1 }}
+           className="max-w-md w-full bg-red-500/10 backdrop-blur-xl border border-red-500/20 rounded-[2rem] p-8 shadow-2xl text-center space-y-6"
+        >
+          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <MailWarning className="w-10 h-10 text-red-500" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-black text-foreground">Account Under Review</h1>
+            <p className="text-muted-foreground text-sm font-medium">
+              Your account has received multiple community reports and is temporarily suspended pending review.
+            </p>
+          </div>
+          <button
+            onClick={() => signOut()}
+            className="w-full py-3.5 rounded-xl font-bold bg-red-500 text-white flex items-center justify-center gap-2 hover:opacity-90 transition"
+          >
+            <LogOut className="w-5 h-5" /> Sign Out
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
   // 4. Fully Verified & Profile Loaded -> Standard App Layout
+  const isAdmin = user?.email === "animesh.pandey3@s.amity.edu";
+  
   const navLinks = [
     { name: "Feed", href: "/feed", icon: Home },
     { name: "Gigs", href: "/gigs", icon: LayoutList },
@@ -350,6 +325,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { name: "Messages", href: "/messages", icon: MessageSquare },
     { name: "My Gigs", href: "/my-gigs", icon: Bookmark },
     { name: "Profile", href: "/profile", icon: UserIcon },
+    ...(isAdmin ? [{ name: "Admin", href: "/admin", icon: ShieldAlert }] : []),
   ];
 
   return (
