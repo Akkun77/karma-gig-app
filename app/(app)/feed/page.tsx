@@ -4,8 +4,9 @@ import { useAuth } from "@/context/AuthContext";
 import { SwipeStack } from "@/components/SwipeStack";
 import { SearchBar } from "@/components/SearchBar";
 import { Gig } from "@/components/GigCard";
-import { collection, query, where, getDocs, doc, writeBatch } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { acceptGig } from "@/lib/firestore-helpers";
 import toast from "react-hot-toast";
 
 export default function FeedPage() {
@@ -30,7 +31,6 @@ export default function FeedPage() {
         setGigs(loaded);
       } catch (err: any) {
         console.error("Failed to load gigs", err);
-        // Only error if it's not a permission error or similar known initial config error
         if (err.code !== "permission-denied") {
           toast.error("Failed to load feed");
         }
@@ -44,38 +44,17 @@ export default function FeedPage() {
   const handleSwipeRight = async (gig: Gig) => {
     if (!user) return;
     try {
-      const batch = writeBatch(db);
-      const gigRef = doc(db, "gigs", gig.id);
-      
-      batch.update(gigRef, {
-        status: "in_progress",
-        acceptedBy: user.uid
-      });
-      
-      // Real-time Push Notification Dispatcher
-      const notifRef = doc(collection(db, "notifications"));
-      batch.set(notifRef, {
-        userId: gig.postedBy, 
-        sourceId: user.uid, 
-        sourceName: userProfile?.displayName || "A Student",
-        type: "gig_accepted",
-        text: `accepted your gig "${gig.title}"!`,
-        link: "/my-gigs",
-        read: false,
-        createdAt: new Date()
-      });
-
-      await batch.commit();
+      await acceptGig(gig.id, user.uid);
       toast.success("Gig accepted! Check My Gigs.");
-    } catch (err) {
-      toast.error("Failed to accept gig.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to accept gig.");
       // Rollback UI optimistically
       setGigs(prev => [gig, ...prev]);
     }
   };
 
   const handleSwipeLeft = (gig: Gig) => {
-    // Just dismiss client-side, maybe log view history
+    // Just dismiss client-side
   };
 
   const filteredGigs = gigs.filter(g => {

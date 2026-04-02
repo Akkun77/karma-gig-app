@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = { manifest: "/manifest.json",
-  title: "KarmaGig — Campus Gig Economy",
+  title: "UniG — Campus Gig Economy",
   description: "The campus gig economy, powered by Karma. Trade skills and favors with fellow students.",
 };
 

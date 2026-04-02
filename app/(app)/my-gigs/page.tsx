@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { collection, query, where, getDocs, doc, writeBatch, deleteDoc, addDoc, serverTimestamp, getDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { completeGigWithReview } from "@/lib/firestore-helpers";
+import { completeGigWithReview, completeGig, submitReview } from "@/lib/firestore-helpers";
 import { ReviewModal } from "@/components/ReviewModal";
 import { Gig } from "@/components/GigCard";
 import { Loader2, CheckCircle2, Trash2, MessageSquare, Clock, PartyPopper, Star } from "lucide-react";
@@ -40,21 +40,31 @@ export default function MyGigsPage() {
   }, [user, activeTab]);
 
   
-  const handleMarkComplete = (gig: Gig) => {
+  const handleMarkComplete = async (gig: Gig) => {
     if (!user || gig.status !== "in_progress") return;
-    setReviewGig(gig);
+    const confirmed = confirm(`Mark "${gig.title}" as complete and transfer ${gig.karmaPrice} Karma?`);
+    if (!confirmed) return;
+    try {
+      await completeGig(gig.id);
+      toast.success(`?? Gig complete! ${gig.karmaPrice} Karma transferred.`);
+      setGigs(prev => prev.map(g => g.id === gig.id ? { ...g, status: "complete" } as Gig : g));
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to map complete.");
+    }
   };
 
   const handleReviewSubmit = async (rating: number, reviewText: string) => {
     if (!user || !reviewGig) return;
     try {
-      await completeGigWithReview(reviewGig.id, rating, reviewText);
-      toast.success(`?? Gig complete! ${reviewGig.karmaPrice} Karma transferred & review submitted.`);
-      setGigs((prev) => prev.map((g) => (g.id === reviewGig.id ? { ...g, status: "complete" } as Gig : g)));
+      await submitReview(reviewGig.id, rating, reviewText);
+      toast.success(`Review submitted successfully!`);
+      // Optionally mark that they reviewed locally so they can't click it again this session
+      setGigs(prev => prev.map(g => g.id === reviewGig.id ? { ...g, reviewedLocally: true } as Gig & {reviewedLocally?: boolean} : g));
       setReviewGig(null);
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || "Failed to complete gig.");
+      toast.error(err.message || "Failed to submit review.");
       setReviewGig(null);
     }
   };
@@ -232,11 +242,21 @@ export default function MyGigsPage() {
                     </button>
                   )}
 
-                  {/* Complete badge */}
+                  {/* Complete badge and Review button */}
                   {gig.status === "complete" && (
-                    <span className="flex items-center gap-2 px-5 py-2 text-green-400 bg-green-500/10 border border-green-500/20 font-bold rounded-xl text-sm">
-                      <PartyPopper size={15} /> {activeTab === "accepted" ? `+${gig.karmaPrice} Karma Earned!` : `Completed`}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="flex items-center gap-2 px-5 py-2 text-green-400 bg-green-500/10 border border-green-500/20 font-bold rounded-xl text-sm">
+                        <PartyPopper size={15} /> {activeTab === "accepted" ? `+${gig.karmaPrice} Karma Earned!` : `Completed`}
+                      </span>
+                      {isBuyer && !(gig as any).reviewedLocally && (
+                        <button
+                          onClick={() => setReviewGig(gig)}
+                          className="flex items-center gap-2 px-5 py-2 bg-yellow-500 text-black hover:bg-yellow-400 font-bold rounded-xl transition shadow-lg shadow-yellow-500/30"
+                        >
+                          <Star size={16} className="fill-black" /> Leave a Review
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

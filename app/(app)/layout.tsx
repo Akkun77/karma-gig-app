@@ -89,7 +89,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       } else {
         // Brand new profile
         await createUserProfile(user, onboardName || user.displayName || "Student", onboardMajor.trim(), onboardLocation.trim());
-        toast.success("Welcome to KarmaGig! 🎉", { id: "onboard" });
+        toast.success("Welcome to UniG! 🎉", { id: "onboard" });
       }
       setShowOnboarding(false);
     } catch (err) {
@@ -334,7 +334,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               className="w-full py-4 rounded-xl font-black text-lg text-white flex items-center justify-center gap-2 bg-primary hover:opacity-90 transition disabled:opacity-50 shadow-lg shadow-primary/30 mt-2"
             >
               {onboardLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-              {onboardLoading ? "Saving..." : "Save & Enter KarmaGig →"}
+              {onboardLoading ? "Saving..." : "Save & Enter UniG →"}
             </motion.button>
           </form>
         </motion.div>
@@ -359,7 +359,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between h-16">
             <Link href="/feed" className="flex items-center gap-2">
               <span className="text-2xl">⚡</span>
-              <span className="text-xl font-bold tracking-tight hidden sm:block">KarmaGig</span>
+              <span className="text-xl font-bold tracking-tight hidden sm:block">UniG</span>
             </Link>
 
             <div className="hidden md:flex flex-1 justify-center px-8 space-x-1 lg:space-x-2">

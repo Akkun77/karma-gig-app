@@ -33,7 +33,7 @@ export default function LandingPage() {
       <nav className="w-full max-w-7xl px-6 py-6 flex justify-between items-center z-10">
         <div className="flex items-center gap-2">
           <span className="text-3xl">⚡</span>
-          <span className="text-2xl font-black tracking-tighter">KarmaGig</span>
+          <span className="text-2xl font-black tracking-tighter">UniG</span>
         </div>
         <div className="flex gap-4">
           <Link href="/login" className="px-5 py-2.5 rounded-full font-bold text-foreground hover:bg-white/5 transition">

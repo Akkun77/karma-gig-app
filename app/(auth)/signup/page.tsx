@@ -44,7 +44,7 @@ export default function SignupPage() {
           <div className="text-center space-y-2">
             <span className="text-4xl">⚡</span>
             <h1 className="text-2xl font-bold karma-gradient">Create Account</h1>
-            <p className="text-muted-foreground text-sm">Join the KarmaGig network</p>
+            <p className="text-muted-foreground text-sm">Join the UniG network</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">

@@ -42,7 +42,7 @@ export default function LoginPage() {
           <div className="text-center space-y-2">
             <span className="text-4xl">⚡</span>
             <h1 className="text-2xl font-bold karma-gradient">Welcome back</h1>
-            <p className="text-muted-foreground text-sm">Sign in to your KarmaGig account</p>
+            <p className="text-muted-foreground text-sm">Sign in to your UniG account</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">

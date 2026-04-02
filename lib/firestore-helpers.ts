@@ -164,3 +164,54 @@ export async function completeGigWithReview(gigId: string, rating: number, revie
     });
   });
 }
+
+
+export async function submitReview(gigId: string, rating: number, reviewText?: string): Promise<void> {
+  const gigRef = doc(db, "gigs", gigId);
+  await runTransaction(db, async (tx) => {
+    const gigSnap = await tx.get(gigRef);
+    if (!gigSnap.exists()) throw new Error("Gig not found.");
+    const gig = gigSnap.data() as Gig;
+    if (gig.status !== "complete") throw new Error("Gig must be complete to review.");
+
+    const isLookingFor = gig.type === "looking_for";
+    const sellerUid = isLookingFor ? gig.acceptedBy! : gig.postedBy;
+    const buyerUid = isLookingFor ? gig.postedBy : gig.acceptedBy!;
+
+    const sellerRef = doc(db, "users", sellerUid);
+    const sellerSnap = await tx.get(sellerRef);
+    if (!sellerSnap.exists()) throw new Error("Seller profile not found.");
+    
+    const sellerData = sellerSnap.data();
+    const currentTotalReviews = sellerData.reviewCount ?? 0;
+    const currentAvgRating = sellerData.rating ?? 0;
+    
+    const newTotalReviews = currentTotalReviews + 1;
+    const newAvgRating = ((currentAvgRating * currentTotalReviews) + rating) / newTotalReviews;
+
+    tx.update(sellerRef, {
+      rating: newAvgRating,
+      reviewCount: newTotalReviews
+    });
+
+    const newReviewRef = doc(collection(sellerRef, "reviews"));
+    tx.set(newReviewRef, {
+      gigId,
+      reviewerUid: buyerUid,
+      rating,
+      comment: reviewText || "",
+      createdAt: serverTimestamp()
+    });
+
+    const notifRef = doc(collection(db, "notifications"));
+    tx.set(notifRef, {
+      userId: sellerUid,
+      sourceId: buyerUid,
+      type: "new_review",
+      text: `You received a ${rating}-star review for "${gig.title}"!`,
+      link: "/profile",
+      read: false,
+      createdAt: serverTimestamp(),
+    });
+  });
+}

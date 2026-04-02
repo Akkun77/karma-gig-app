@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { flagGig } from '@/lib/firestore-helpers';
-import toast from 'react-hot-toast'; from "next/navigation";
+import toast from 'react-hot-toast';
 
 export interface Gig {
   id: string;
@@ -39,7 +39,9 @@ const CategoryMap: Record<string, { label: string; icon: any; color: string }> =
   other: { label: "✨ Other", icon: AlertCircle, color: "text-gray-400 bg-gray-500/20 border-gray-500/30" },
 };
 
-export function GigCard({
+export function GigCard({ gig, onAccept, onPass, index, isTop }: GigCardProps) {
+  const { user } = useAuth();
+
   const handleFlag = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) return;
@@ -51,9 +53,6 @@ export function GigCard({
       toast.error(err.message || "Could not flag gig");
     }
   };
-
-  const { user } = useAuth();
- gig, onAccept, onPass, index, isTop }: GigCardProps) {
   const router = useRouter();
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-10, 10]);

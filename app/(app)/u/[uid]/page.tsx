@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
-import { doc, getDoc, collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { use, useEffect, useState } from "react";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { Loader2, User as UserIcon, Star, CheckCircle, Clock, MapPin, Building2 } from "lucide-react";
+import { Loader2, Star, CheckCircle, Clock, MapPin, Building2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface PublicProfile {
@@ -25,7 +25,8 @@ interface CompletedGig {
   completedAt: Date;
 }
 
-export default function PublicProfilePage({ params }: { params: { uid: string } }) {
+export default function PublicProfilePage({ params: paramsPromise }: { params: Promise<{ uid: string }> }) {
+  const params = use(paramsPromise);
   const { user } = useAuth();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [completedGigs, setCompletedGigs] = useState<CompletedGig[]>([]);
@@ -40,8 +41,6 @@ export default function PublicProfilePage({ params }: { params: { uid: string } 
           setProfile(snap.data() as PublicProfile);
         }
 
-        // Fetch gigs where this user was involved and gig is complete
-        // We'll just look for gigs accepted by them for now
         const q = query(
           collection(db, "gigs"),
           where("acceptedBy", "==", params.uid),
@@ -82,7 +81,7 @@ export default function PublicProfilePage({ params }: { params: { uid: string } 
     return (
       <div className="text-center py-20 card-surface glass max-w-lg mx-auto mt-10">
         <h2 className="text-2xl font-bold">User Not Found</h2>
-        <p className="text-muted-foreground mt-2">This student's profile either doesn't exist or was removed.</p>
+        <p className="text-muted-foreground mt-2">This student profile does not exist or was removed.</p>
       </div>
     );
   }
@@ -90,7 +89,6 @@ export default function PublicProfilePage({ params }: { params: { uid: string } 
   return (
     <div className="max-w-3xl mx-auto py-6 pb-24 space-y-8">
       
-      {/* Profile Header */}
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -135,13 +133,11 @@ export default function PublicProfilePage({ params }: { params: { uid: string } 
               <Star className="text-yellow-400 fill-yellow-400 w-6 h-6 drop-shadow-md" />
             </div>
             <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Avg Rating</span>
-            
             <span className="text-xs text-muted-foreground mt-1 opacity-70">({profile.reviewCount || 0} reviews)</span>
           </div>
         </div>
       </motion.div>
 
-      {/* Completed Gigs */}
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { collection, query, where, getDocs, doc, writeBatch } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { acceptGig } from "@/lib/firestore-helpers";
 import { Gig } from "@/components/GigCard";
 import { SearchBar } from "@/components/SearchBar";
 import { Loader2, Zap, CheckCircle2 } from "lucide-react";
@@ -64,27 +65,11 @@ export default function GigsPage() {
     if (!user || !userProfile) return;
     setAccepting(gig.id);
     try {
-      const batch = writeBatch(db);
-      const gigRef = doc(db, "gigs", gig.id);
-      batch.update(gigRef, { status: "in_progress", acceptedBy: user.uid });
-
-      const notifRef = doc(collection(db, "notifications"));
-      batch.set(notifRef, {
-        userId: gig.postedBy,
-        sourceId: user.uid,
-        sourceName: userProfile.displayName || "A Student",
-        type: "gig_accepted",
-        text: `accepted your gig "${gig.title}"!`,
-        link: "/my-gigs",
-        read: false,
-        createdAt: new Date(),
-      });
-
-      await batch.commit();
+      await acceptGig(gig.id, user.uid);
       toast.success("Gig accepted! Check My Gigs.");
       setGigs(prev => prev.filter(g => g.id !== gig.id));
-    } catch (err) {
-      toast.error("Failed to accept gig.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to accept gig.");
     } finally {
       setAccepting(null);
     }
